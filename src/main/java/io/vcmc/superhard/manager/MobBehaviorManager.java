@@ -146,20 +146,32 @@ public class MobBehaviorManager {
     }
 
     private void tryScaffold(Zombie zombie) {
-        // 真下の足場がある場合のみ積み上げ可能
-        Block below = zombie.getLocation().subtract(0, 1, 0).getBlock();
-        if (!below.getType().isSolid()) return;
+        if (!(zombie.getTarget() instanceof Player player)) return;
+        double heightDiff = player.getLocation().getY() - zombie.getLocation().getY();
+        if (heightDiff < 1.5) return;
 
-        // 前方ブロックをチェックして空間があれば足場を置く
-        Vector fwd = zombie.getLocation().getDirection().setY(0).normalize();
-        Location placeLoc = zombie.getLocation().clone().add(fwd);
-        Block placeBlock = placeLoc.getBlock();
-        if (!placeBlock.getType().isAir()) return;
+        // 真下に足場がない場合はスキップ
+        Block ground = zombie.getLocation().clone().subtract(0, 0.1, 0).getBlock();
+        if (!ground.getType().isSolid()) return;
 
-        Block placeBelow = placeBlock.getRelative(0, -1, 0);
-        if (placeBelow.getType().isAir()) {
-            // 1段下に足場を置く
-            placeBelow.setType(Material.COBBLESTONE);
+        Vector dir = SHUtil.horizontalDirection(zombie.getLocation(), player.getLocation());
+        Location fwdLoc   = zombie.getLocation().clone().add(dir.getX(), 0, dir.getZ());
+        Block    fwdBlock = fwdLoc.getBlock();
+
+        if (fwdBlock.getType().isSolid()) {
+            // ケース①: 前方が壁 → 壁の1段上にブロックを置いて段差を作る
+            Block fwdAbove = fwdBlock.getRelative(0, 1, 0);
+            Block fwdAbove2 = fwdBlock.getRelative(0, 2, 0);
+            if ((fwdAbove.getType().isAir() || fwdAbove.isLiquid())
+                    && (fwdAbove2.getType().isAir() || fwdAbove2.isLiquid())) {
+                fwdAbove.setType(Material.COBBLESTONE);
+            }
+        } else {
+            // ケース②: 前方が空き → 足元の地面が途切れていれば橋を補填
+            Block fwdGround = fwdLoc.clone().subtract(0, 1, 0).getBlock();
+            if (!fwdGround.getType().isSolid() && !fwdGround.isLiquid()) {
+                fwdGround.setType(Material.COBBLESTONE);
+            }
         }
     }
 

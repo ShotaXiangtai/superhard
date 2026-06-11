@@ -34,6 +34,9 @@ public class MobSpawnListener implements Listener {
         // 敵対モブ (Monster) のみ対象。魚・動物・ゴーレム等は除外
         if (!(mob instanceof Monster)) return;
 
+        // 地下スポーンは除外 — 精鋭・HP強化は地上のみ
+        if (SHUtil.isUnderground(mob.getLocation())) return;
+
         // プラグイン自身のスポーンには多重適用しない
         if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM) return;
         if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.COMMAND) return;

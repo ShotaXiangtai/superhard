@@ -246,7 +246,7 @@ public class RaidBossManager {
         plugin.getLogger().info("レイドボス討伐。次回降臨: " + getCountdownString());
     }
 
-    /** 最高 RAGE スコアのプレイヤーの近くを返す */
+    /** 最高 RAGE スコアのプレイヤーの近くの地上に返す */
     private Location findSpawnLocation() {
         Player target = Bukkit.getOnlinePlayers().stream()
             .filter(p -> !p.hasPermission("superhard.bypass")
@@ -255,7 +255,14 @@ public class RaidBossManager {
             .orElse(null);
         if (target == null) target = Bukkit.getOnlinePlayers().stream().findFirst().orElse(null);
         if (target == null) return null;
-        return SHUtil.safeSpawnNear(target.getLocation(), 20, 40);
+
+        // ターゲットが地下にいる場合は地表から水平方向にオフセット
+        Location anchor = target.getLocation();
+        if (SHUtil.isUnderground(anchor)) {
+            int surfaceY = anchor.getWorld().getHighestBlockYAt(anchor.getBlockX(), anchor.getBlockZ()) + 1;
+            anchor = new Location(anchor.getWorld(), anchor.getX(), surfaceY, anchor.getZ());
+        }
+        return SHUtil.safeSpawnNear(anchor, 20, 40);
     }
 
     // ============================================================

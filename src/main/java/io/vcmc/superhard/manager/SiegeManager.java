@@ -199,6 +199,11 @@ public class SiegeManager {
             Location base = player.getBedSpawnLocation();
             if (base == null) base = player.getLocation();
             if (base.getWorld() == null) continue;
+            // ベッドが地下にある場合は地表に引き上げる
+            if (SHUtil.isUnderground(base)) {
+                int surfaceY = base.getWorld().getHighestBlockYAt(base.getBlockX(), base.getBlockZ()) + 1;
+                base = new Location(base.getWorld(), base.getX(), surfaceY, base.getZ());
+            }
             final Location candidate = base;
             boolean dup = bases.stream().anyMatch(e ->
                 e.getWorld() != null && e.getWorld().equals(candidate.getWorld())

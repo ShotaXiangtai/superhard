@@ -83,10 +83,21 @@ public final class SHUtil {
                 return loc;
             }
         }
-        // フォールバック: そのまま返す
-        return base.clone().add(
-            RANDOM.nextGaussian() * 5, 0, RANDOM.nextGaussian() * 5
-        );
+        // フォールバック: 必ず地表に返す
+        double fx = base.getX() + RANDOM.nextGaussian() * 5;
+        double fz = base.getZ() + RANDOM.nextGaussian() * 5;
+        int fy = world.getHighestBlockYAt((int) fx, (int) fz) + 1;
+        return new Location(world, fx, fy, fz);
+    }
+
+    /**
+     * 地下判定: 地表 (WORLD_SURFACE) より3ブロック以上下なら地下とみなす。
+     * レイド/精鋭/ボスのスポーン除外に使用。
+     */
+    public static boolean isUnderground(Location loc) {
+        if (loc.getWorld() == null) return false;
+        int surfaceY = loc.getWorld().getHighestBlockYAt(loc.getBlockX(), loc.getBlockZ());
+        return loc.getBlockY() < surfaceY - 3;
     }
 
     /** アイテムに特定の NamespacedKey が設定されているか確認 */

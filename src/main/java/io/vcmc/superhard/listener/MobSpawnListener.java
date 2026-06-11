@@ -31,6 +31,9 @@ public class MobSpawnListener implements Listener {
         if (!plugin.getSHConfig().isEnabled()) return;
         if (!(event.getEntity() instanceof Mob mob)) return;
 
+        // 敵対モブ (Monster) のみ対象。魚・動物・ゴーレム等は除外
+        if (!(mob instanceof Monster)) return;
+
         // プラグイン自身のスポーンには多重適用しない
         if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM) return;
         if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.COMMAND) return;

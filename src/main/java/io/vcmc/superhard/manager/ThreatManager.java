@@ -21,11 +21,11 @@ import java.util.UUID;
 public class ThreatManager {
 
     public enum ThreatLevel {
-        CALM       (0,    99,   "CALM",       NamedTextColor.GREEN),
-        AGITATED   (100,  299,  "AGITATED",   NamedTextColor.YELLOW),
-        HOSTILE    (300,  699,  "HOSTILE",    NamedTextColor.GOLD),
-        INFURIATED (700,  1499, "INFURIATED", NamedTextColor.RED),
-        WRATHFUL   (1500, Integer.MAX_VALUE, "WRATHFUL", NamedTextColor.DARK_RED);
+        CALM       (0,    99,   "Lv.1", NamedTextColor.GREEN),
+        AGITATED   (100,  299,  "Lv.2", NamedTextColor.YELLOW),
+        HOSTILE    (300,  699,  "Lv.3", NamedTextColor.GOLD),
+        INFURIATED (700,  1499, "Lv.4", NamedTextColor.RED),
+        WRATHFUL   (1500, Integer.MAX_VALUE, "Lv.5", NamedTextColor.DARK_RED);
 
         public final int min, max;
         public final String displayName;

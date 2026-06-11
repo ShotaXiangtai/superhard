@@ -32,9 +32,9 @@ import java.util.List;
 public class EliteManager {
 
     public enum EliteType {
-        SHURA ("《シュラ》",  NamedTextColor.YELLOW,       "shura"),
-        HASHA ("《ハーシャ》", NamedTextColor.GOLD,         "hasha"),
-        TENMA ("《テンマ》",  NamedTextColor.DARK_PURPLE,  "tenma");
+        SHURA ("【Lv.1】", NamedTextColor.YELLOW,      "shura"),
+        HASHA ("【Lv.2】", NamedTextColor.GOLD,        "hasha"),
+        TENMA ("【Lv.3】", NamedTextColor.DARK_PURPLE, "tenma");
 
         public final String prefix;
         public final NamedTextColor color;
@@ -243,13 +243,13 @@ public class EliteManager {
     public ItemStack createTemperedShard() {
         ItemStack shard = new ItemStack(Material.AMETHYST_SHARD, 1);
         var meta = shard.getItemMeta();
-        meta.displayName(Component.text("ソウルシャード", NamedTextColor.LIGHT_PURPLE)
+        meta.displayName(Component.text("鋼", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false)
-            .decoration(TextDecoration.BOLD, false));
+            .decoration(TextDecoration.BOLD, true));
         meta.lore(java.util.List.of(
-            Component.text("精鋭モブの魂が凝縮されたかけら", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+            Component.text("精鋭から削り出した硬質な素材", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false),
             Component.text("アンビルで装備と組み合わせると", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-            Component.text("TEMPERED 状態に強化できる", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false)
+            Component.text("[TEMPERED] 状態に強化できる", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_TEMPERED_SHARD, PersistentDataType.BOOLEAN, true);
         shard.setItemMeta(meta);

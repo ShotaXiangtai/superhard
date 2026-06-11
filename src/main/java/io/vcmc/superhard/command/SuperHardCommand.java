@@ -54,6 +54,7 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
             case "siege"    -> cmdSiege(sender, args);
             case "reload"   -> cmdReload(sender);
             case "elite"    -> cmdElite(sender, args);
+            case "boss"     -> cmdBoss(sender, args);
             default -> { sendHelp(sender); yield true; }
         };
     }
@@ -199,6 +200,30 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // ---- boss ----
+
+    private boolean cmdBoss(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("[SuperHard] このコマンドはゲーム内でのみ使用できます。", NamedTextColor.RED));
+            return true;
+        }
+        if (args.length < 2 || !args[1].equalsIgnoreCase("spawn")) {
+            sender.sendMessage(Component.text("[SuperHard] 使い方: /sh boss spawn", NamedTextColor.RED));
+            return true;
+        }
+        if (plugin.getRaidBossManager().hasActiveBoss()) {
+            sender.sendMessage(Component.text("[SuperHard] レイドボスはすでに出現中です。", NamedTextColor.YELLOW));
+            return true;
+        }
+        boolean ok = plugin.getRaidBossManager().manualSpawn(player.getLocation());
+        if (ok) {
+            sender.sendMessage(Component.text("[SuperHard] レイドボスをスポーンしました。", NamedTextColor.GREEN));
+        } else {
+            sender.sendMessage(Component.text("[SuperHard] スポーンに失敗しました。", NamedTextColor.RED));
+        }
+        return true;
+    }
+
     // ---- ヘルプ ----
 
     private void sendHelp(CommandSender sender) {
@@ -208,8 +233,8 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(cmd("/sh setlevel <player> <0-9999>", "脅威スコアを設定"));
         sender.sendMessage(cmd("/sh siege", "包囲戦の状態確認"));
         sender.sendMessage(cmd("/sh reload", "コンフィグ再読み込み"));
-        sender.sendMessage(cmd("/sh elite [SHURA|HASHA|TENMA]",        "視線先のモブを精鋭化"));
-        sender.sendMessage(cmd("/sh boss spawn",                         "天魔王をスポーン"));
+        sender.sendMessage(cmd("/sh elite [SHURA|HASHA|TENMA]", "視線先のモブを精鋭化"));
+        sender.sendMessage(cmd("/sh boss spawn",               "レイドボスを手動スポーン"));
     }
 
     // ---- フォーマットヘルパー ----
@@ -236,8 +261,12 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("superhard.admin")) return List.of();
 
         if (args.length == 1) {
-            return Arrays.asList("status", "threat", "setlevel", "siege", "reload", "elite")
+            return Arrays.asList("status", "threat", "setlevel", "siege", "reload", "elite", "boss")
                 .stream().filter(s -> s.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
+        }
+
+        if (args.length == 2 && args[0].equalsIgnoreCase("boss")) {
+            return List.of("spawn");
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("elite")) {

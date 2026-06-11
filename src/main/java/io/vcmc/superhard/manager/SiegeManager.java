@@ -8,6 +8,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.*;
+import org.bukkit.Sound;
 import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -15,11 +16,11 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * 包囲戦（Siege Night）システム。
+ * レイド（Siege Night）システム。
  * ランダムな深夜にモブの群れがプレイヤーの拠点（ベッド地点）を一斉に攻撃する。
  *
  * TCMのような単純な強化とは異なり、ウェーブ制の組織的な攻撃を演出する。
- * 真に強い者だけが包囲戦を生き抜くことができる。
+ * 真に強い者だけがレイドを生き抜くことができる。
  */
 public class SiegeManager {
 
@@ -31,7 +32,7 @@ public class SiegeManager {
     private int currentWave = 0;
     private long lastSiegeDay = -1;
 
-    // 包囲戦中にスポーンしたモブの追跡（撃退報酬用）
+    // レイド中にスポーンしたモブの追跡（撃退報酬用）
     private final Set<UUID> siegeMobs = new HashSet<>();
 
     public SiegeManager(SuperHardPlugin plugin) {
@@ -70,7 +71,7 @@ public class SiegeManager {
         }
     }
 
-    // ---- 包囲戦開始 ----
+    // ---- レイド開始 ----
 
     private void startSiege(long day) {
         siegeActive = true;
@@ -86,7 +87,14 @@ public class SiegeManager {
         );
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.showTitle(title);
-            p.playSound(p.getLocation(), Sound.EVENT_RAID_HORN, 1.5f, 0.8f);
+            // レイド開始 - 段階的サウンド演出
+            p.playSound(p.getLocation(), Sound.ENTITY_WITHER_AMBIENT,          1.5f, 0.5f);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (p.isOnline()) p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.7f);
+            }, 15L);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (p.isOnline()) p.playSound(p.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.6f);
+            }, 30L);
         }
 
         // ウェーブスケジュール
@@ -202,12 +210,12 @@ public class SiegeManager {
             eliteLoc.setWorld(base.getWorld());
             Zombie elite = base.getWorld().spawn(eliteLoc, Zombie.class);
             elite.setTarget(rep);
-            plugin.getEliteManager().applyElite(elite, EliteManager.EliteType.ANCIENT);
+            plugin.getEliteManager().applyElite(elite, EliteManager.EliteType.HASHA);
             siegeMobs.add(elite.getUniqueId());
             spawned++;
 
             base.getWorld().getNearbyPlayers(base, 60).forEach(p ->
-                p.sendMessage(Component.text("[SuperHard] 包囲戦の首領が現れた！", NamedTextColor.GOLD)));
+                p.sendMessage(Component.text("[SuperHard] レイドの首領が現れた！", NamedTextColor.GOLD)));
         }
 
         return spawned;
@@ -216,17 +224,17 @@ public class SiegeManager {
     private void scaleSiegeMob(Mob mob, ThreatLevel threat) {
         var attr = mob.getAttribute(Attribute.MAX_HEALTH);
         if (attr == null) return;
-        double mult = plugin.getSHConfig().getMobHpMultiplier(threat) * 1.15; // 包囲戦ボーナス
+        double mult = plugin.getSHConfig().getMobHpMultiplier(threat) * 1.15; // レイドボーナス
         attr.setBaseValue(attr.getBaseValue() * mult);
         mob.setHealth(attr.getValue());
     }
 
-    // ---- 包囲戦終了 ----
+    // ---- レイド終了 ----
 
     private void endSiege() {
         siegeActive = false;
 
-        // 残存した包囲戦モブを撤退（消滅）させる
+        // 残存したレイドモブを撤退（消滅）させる
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
                 if (siegeMobs.contains(entity.getUniqueId())) {

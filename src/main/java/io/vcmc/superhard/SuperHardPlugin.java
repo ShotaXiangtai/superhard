@@ -1,7 +1,10 @@
 package io.vcmc.superhard;
 
+import io.vcmc.superhard.boss.RaidBossManager;
 import io.vcmc.superhard.command.SuperHardCommand;
 import io.vcmc.superhard.config.SHConfig;
+import io.vcmc.superhard.integration.AuraSkillsIntegration;
+import io.vcmc.superhard.listener.BossListener;
 import io.vcmc.superhard.listener.CombatListener;
 import io.vcmc.superhard.listener.CraftingListener;
 import io.vcmc.superhard.listener.MobSpawnListener;
@@ -21,6 +24,8 @@ public final class SuperHardPlugin extends JavaPlugin {
     private EliteManager eliteManager;
     private SiegeManager siegeManager;
     private MobBehaviorManager behaviorManager;
+    private RaidBossManager raidBossManager;
+    private AuraSkillsIntegration auraSkillsIntegration;
 
     @Override
     public void onEnable() {
@@ -33,12 +38,19 @@ public final class SuperHardPlugin extends JavaPlugin {
         eliteManager    = new EliteManager(this);
         siegeManager    = new SiegeManager(this);
         behaviorManager = new MobBehaviorManager(this);
+        raidBossManager = new RaidBossManager(this);
+
+        // AuraSkills ソフト連携（入っている場合のみ有効化）
+        if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {
+            auraSkillsIntegration = new AuraSkillsIntegration(this);
+        }
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new MobSpawnListener(this), this);
         pm.registerEvents(new CombatListener(this),   this);
         pm.registerEvents(new PlayerListener(this),   this);
         pm.registerEvents(new CraftingListener(this), this);
+        pm.registerEvents(new BossListener(this),     this);
 
         var cmd = getCommand("superhard");
         if (cmd != null) {
@@ -57,6 +69,7 @@ public final class SuperHardPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (raidBossManager != null) raidBossManager.shutdown();
         if (behaviorManager != null) behaviorManager.stop();
         if (threatManager   != null) { threatManager.save(); threatManager.stop(); }
         if (siegeManager    != null) siegeManager.stop();
@@ -68,5 +81,7 @@ public final class SuperHardPlugin extends JavaPlugin {
     public ThreatManager getThreatManager()     { return threatManager; }
     public EliteManager getEliteManager()       { return eliteManager; }
     public SiegeManager getSiegeManager()       { return siegeManager; }
-    public MobBehaviorManager getBehaviorManager() { return behaviorManager; }
+    public MobBehaviorManager getBehaviorManager()       { return behaviorManager; }
+    public RaidBossManager getRaidBossManager()          { return raidBossManager; }
+    public AuraSkillsIntegration getAuraSkillsIntegration() { return auraSkillsIntegration; }
 }

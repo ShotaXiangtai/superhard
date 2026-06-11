@@ -5,6 +5,7 @@ api-version: '26.1'
 description: Hard SMP challenge plugin inspired by True Crafter Mode
 authors: [vcmc]
 folia-supported: false
+softdepend: [AuraSkills]
 
 commands:
   superhard:

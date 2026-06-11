@@ -185,11 +185,11 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        EliteManager.EliteType type = EliteManager.EliteType.ANCIENT;
+        EliteManager.EliteType type = EliteManager.EliteType.HASHA;
         if (args.length >= 2) {
             try { type = EliteManager.EliteType.valueOf(args[1].toUpperCase()); }
             catch (IllegalArgumentException e) {
-                player.sendMessage(Component.text("[SuperHard] 精鋭タイプ: FORGED, ANCIENT, HARBINGER", NamedTextColor.YELLOW));
+                player.sendMessage(Component.text("[SuperHard] 精鋭タイプ: SHURA, HASHA, TENMA", NamedTextColor.YELLOW));
                 return true;
             }
         }
@@ -208,7 +208,8 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(cmd("/sh setlevel <player> <0-9999>", "脅威スコアを設定"));
         sender.sendMessage(cmd("/sh siege", "包囲戦の状態確認"));
         sender.sendMessage(cmd("/sh reload", "コンフィグ再読み込み"));
-        sender.sendMessage(cmd("/sh elite [FORGED|ANCIENT|HARBINGER]", "視線先のモブを精鋭化"));
+        sender.sendMessage(cmd("/sh elite [SHURA|HASHA|TENMA]",        "視線先のモブを精鋭化"));
+        sender.sendMessage(cmd("/sh boss spawn",                         "天魔王をスポーン"));
     }
 
     // ---- フォーマットヘルパー ----

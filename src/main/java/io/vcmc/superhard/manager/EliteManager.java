@@ -8,6 +8,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.*;
@@ -21,20 +22,19 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.List;
 
 /**
- * スポーン時に一定確率でモブを「精鋭化」する。
- * 精鋭モブは強化された能力を持ち、「鍛えの欠片」をドロップすることがある。
+ * スポーン時に一定確率でモブを精鋭化する。
  *
  * 精鋭タイプ:
- *   鍛錬済み (FORGED)    - 基礎強化。HP+25%, 速度+10%
- *   古の者   (ANCIENT)   - 中強化。HP+60%, 速度+20%, ダメージ+35%、装備付き
- *   黙示録の (HARBINGER) - 最高強化。HP+100%, 速度+35%, ダメージ+60%、完全装備、パーティクル
+ *   修羅 (SHURA)  - 基礎強化。HP+25%, 速度+10%
+ *   覇者 (HASHA)  - 中強化。HP+60%, 速度+20%, ダメージ+35%、装備付き
+ *   天魔 (TENMA)  - 最高強化。HP+100%, 速度+35%, ダメージ+60%、完全装備
  */
 public class EliteManager {
 
     public enum EliteType {
-        FORGED    ("鍛錬済み", NamedTextColor.AQUA,      "forged"),
-        ANCIENT   ("古の者",   NamedTextColor.GOLD,       "ancient"),
-        HARBINGER ("黙示録の", NamedTextColor.DARK_RED,  "harbinger");
+        SHURA ("《シュラ》",  NamedTextColor.YELLOW,       "shura"),
+        HASHA ("《ハーシャ》", NamedTextColor.GOLD,         "hasha"),
+        TENMA ("《テンマ》",  NamedTextColor.DARK_PURPLE,  "tenma");
 
         public final String prefix;
         public final NamedTextColor color;
@@ -75,11 +75,11 @@ public class EliteManager {
 
         EliteType type;
         if (roll < base * 0.15) {
-            type = EliteType.HARBINGER; // 全体の15%枠内
+            type = EliteType.TENMA; // 全体の15%枠内
         } else if (roll < base * 0.50) {
-            type = EliteType.ANCIENT;   // 次の35%枠
+            type = EliteType.HASHA;   // 次の35%枠
         } else if (roll < base) {
-            type = EliteType.FORGED;    // 残り
+            type = EliteType.SHURA;    // 残り
         } else {
             return false;
         }
@@ -99,9 +99,9 @@ public class EliteManager {
 
         // 移動速度
         double spdMult = switch (type) {
-            case FORGED    -> 1.10;
-            case ANCIENT   -> 1.20;
-            case HARBINGER -> 1.35;
+            case SHURA    -> 1.10;
+            case HASHA   -> 1.20;
+            case TENMA -> 1.35;
         };
         scaleAttribute(mob, Attribute.MOVEMENT_SPEED, spdMult);
 
@@ -117,22 +117,26 @@ public class EliteManager {
                 .decoration(TextDecoration.BOLD, false)));
         mob.setCustomNameVisible(true);
 
-        // 装備（ANCIENT以上）
-        if (type == EliteType.ANCIENT || type == EliteType.HARBINGER) {
+        // 装備（HASHA以上）
+        if (type == EliteType.HASHA || type == EliteType.TENMA) {
             applyEliteEquipment(mob, type);
         }
 
-        // HARBINGERはポーション効果付与
-        if (type == EliteType.HARBINGER) {
+        // TEENMAはポーション効果付与
+        if (type == EliteType.TENMA) {
             mob.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, true, false));
             mob.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 0, true, false));
         }
 
+        // 出現サウンド演出
+        playEliteSpawnSound(mob, type);
+
         // 付近プレイヤーへの通知
         mob.getWorld().getNearbyPlayers(mob.getLocation(), 40).forEach(p ->
             p.sendMessage(Component.text("[SuperHard] ", NamedTextColor.DARK_RED)
-                .append(Component.text("近くに精鋭モブが現れた → ", NamedTextColor.GRAY))
-                .append(Component.text(type.prefix + " " + baseName, type.color)))
+                .append(Component.text(type.prefix + " ", type.color)
+                    .decoration(TextDecoration.BOLD, true))
+                .append(Component.text(baseName + " が出現した", NamedTextColor.GRAY)))
         );
     }
 
@@ -140,10 +144,10 @@ public class EliteManager {
         EntityEquipment eq = mob.getEquipment();
         if (eq == null) return;
 
-        Material helmetMat   = type == EliteType.HARBINGER ? Material.DIAMOND_HELMET    : Material.IRON_HELMET;
-        Material chestMat    = type == EliteType.HARBINGER ? Material.DIAMOND_CHESTPLATE : Material.IRON_CHESTPLATE;
-        Material leggingsMat = type == EliteType.HARBINGER ? Material.DIAMOND_LEGGINGS  : Material.IRON_LEGGINGS;
-        Material bootsMat    = type == EliteType.HARBINGER ? Material.DIAMOND_BOOTS     : Material.IRON_BOOTS;
+        Material helmetMat   = type == EliteType.TENMA ? Material.DIAMOND_HELMET    : Material.IRON_HELMET;
+        Material chestMat    = type == EliteType.TENMA ? Material.DIAMOND_CHESTPLATE : Material.IRON_CHESTPLATE;
+        Material leggingsMat = type == EliteType.TENMA ? Material.DIAMOND_LEGGINGS  : Material.IRON_LEGGINGS;
+        Material bootsMat    = type == EliteType.TENMA ? Material.DIAMOND_BOOTS     : Material.IRON_BOOTS;
 
         eq.setHelmet(new ItemStack(helmetMat));
         eq.setChestplate(new ItemStack(chestMat));
@@ -164,22 +168,6 @@ public class EliteManager {
         if (!isElite(mob)) return;
         if (!SHUtil.chance(plugin.getSHConfig().getShardDropChance())) return;
         mob.getWorld().dropItemNaturally(mob.getLocation(), createTemperedShard());
-    }
-
-    public ItemStack createTemperedShard() {
-        ItemStack shard = new ItemStack(Material.AMETHYST_SHARD, 1);
-        ItemMeta meta = shard.getItemMeta();
-        meta.displayName(Component.text("鍛えの欠片", NamedTextColor.LIGHT_PURPLE)
-            .decoration(TextDecoration.ITALIC, false)
-            .decoration(TextDecoration.BOLD, false));
-        meta.lore(List.of(
-            Component.text("精鋭モブの魂が宿る欠片", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-            Component.text("鍛冶台(アンビル)で装備に組み合わせると", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-            Component.text("装備を「鍛えし」状態に強化できる", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false)
-        ));
-        meta.getPersistentDataContainer().set(KEY_TEMPERED_SHARD, PersistentDataType.BOOLEAN, true);
-        shard.setItemMeta(meta);
-        return shard;
     }
 
     public boolean isTemperedShard(ItemStack item) {
@@ -228,5 +216,43 @@ public class EliteManager {
             case GUARDIAN          -> "ガーディアン";
             default                -> mob.getType().name().replace("_", " ");
         };
+    }
+
+    private void playEliteSpawnSound(Mob mob, EliteType type) {
+        var world = mob.getWorld();
+        var loc   = mob.getLocation();
+        switch (type) {
+            case SHURA -> {
+                world.playSound(loc, Sound.ENTITY_WARDEN_AMBIENT,    1.5f, 0.6f);
+                world.playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.6f, 1.4f);
+            }
+            case HASHA -> {
+                world.playSound(loc, Sound.ENTITY_ELDER_GUARDIAN_AMBIENT, 1.2f, 0.5f);
+                world.playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM,      0.8f, 0.7f);
+            }
+            case TENMA -> {
+                world.playSound(loc, Sound.ENTITY_WITHER_AMBIENT,    1.5f, 0.4f);
+                world.playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.2f, 0.5f);
+                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                    world.playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f), 10L);
+            }
+        }
+    }
+
+    /** ソウルシャード（旧名: 鍛えの欠片）の生成 */
+    public ItemStack createTemperedShard() {
+        ItemStack shard = new ItemStack(Material.AMETHYST_SHARD, 1);
+        var meta = shard.getItemMeta();
+        meta.displayName(Component.text("ソウルシャード", NamedTextColor.LIGHT_PURPLE)
+            .decoration(TextDecoration.ITALIC, false)
+            .decoration(TextDecoration.BOLD, false));
+        meta.lore(java.util.List.of(
+            Component.text("精鋭モブの魂が凝縮されたかけら", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+            Component.text("アンビルで装備と組み合わせると", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+            Component.text("TEMPERED 状態に強化できる", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false)
+        ));
+        meta.getPersistentDataContainer().set(KEY_TEMPERED_SHARD, PersistentDataType.BOOLEAN, true);
+        shard.setItemMeta(meta);
+        return shard;
     }
 }

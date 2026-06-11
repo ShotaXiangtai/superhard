@@ -141,6 +141,20 @@ public class RaidBossManager {
         TenmaouBoss boss = new TenmaouBoss(plugin, loc);
         activeBosses.put(boss.getEntity().getUniqueId(), boss);
         plugin.getLogger().info("レイドボスをスポーンしました: " + loc);
+        if (plugin.getSHConfig().isDiscordBossNotify()) {
+            plugin.getDiscordWebhook().send("💀 **レイドボス**が降臨した！全員で挑め。");
+        }
+    }
+
+    /** 管理者コマンドによる強制キャンセル（報酬なし） */
+    public boolean cancelBoss() {
+        if (!hasActiveBoss()) return false;
+        activeBosses.values().forEach(TenmaouBoss::cancel);
+        // cancel() 内で onBossFinished() が呼ばれ activeBosses がクリアされる
+        Bukkit.getOnlinePlayers().forEach(p ->
+            p.sendMessage(Component.text("[SuperHard] レイドボスが撤退した。", NamedTextColor.YELLOW)));
+        plugin.getDiscordWebhook().send("⚠ レイドボスがキャンセルされた。");
+        return true;
     }
 
     /**
@@ -262,7 +276,15 @@ public class RaidBossManager {
             int surfaceY = anchor.getWorld().getHighestBlockYAt(anchor.getBlockX(), anchor.getBlockZ()) + 1;
             anchor = new Location(anchor.getWorld(), anchor.getX(), surfaceY, anchor.getZ());
         }
-        return SHUtil.safeSpawnNear(anchor, 20, 40);
+        double vr = plugin.getSHConfig().getVillagerProtectionRadius();
+        boolean protect = plugin.getSHConfig().isVillagerProtectionEnabled();
+        for (int attempt = 0; attempt < 5; attempt++) {
+            Location candidate = SHUtil.safeSpawnNear(anchor, 20, 50);
+            if (!protect) return candidate;
+            if (candidate.getWorld().getNearbyEntities(candidate, vr, vr, vr,
+                    e -> e instanceof org.bukkit.entity.Villager).isEmpty()) return candidate;
+        }
+        return SHUtil.safeSpawnNear(anchor, 20, 40); // フォールバック
     }
 
     // ============================================================

@@ -170,16 +170,42 @@
 
 ---
 
+## RAGEランキング
+
+`/sh top` でサーバー内の RAGE スコアランキング TOP 10 を確認できる。
+
+---
+
+## 呪われた場所
+
+プレイヤーが死亡した地点は「呪われた場所」として記録される。
+その半径 20 ブロック内でスポーンしたモブは HP が +20% 強化される。
+記録は 7 日間（リアル）で自動消滅。
+
+---
+
+## 賞金首（バウンティ）
+
+精鋭 Lv.2 / Lv.3 の一部がランダムで「★ 賞金首」になる。
+名前に ★ が付き、倒すと **鋼 × 3 ボーナス** と全体アナウンスが流れる。
+
+---
+
 ## 管理者コマンド
 
 ```
-/sh status                  サーバー状態・全プレイヤーの RAGE スコア
-/sh threat [player]         指定プレイヤーの RAGE スコア確認
-/sh setlevel <p> <0-9999>   RAGE スコアを強制設定
-/sh siege                   レイドの状態確認
-/sh elite [SHURA|HASHA|TENMA]  視線先のモブを精鋭化
-/sh boss spawn              レイドボスをスポーン（自分の位置）
-/sh reload                  コンフィグ再読み込み
+/sh status                          サーバー状態・全プレイヤーの RAGE スコア
+/sh top                             RAGE ランキング TOP 10
+/sh threat [player]                 指定プレイヤーの RAGE スコア確認
+/sh setlevel <player> <0-9999>      RAGE スコアを強制設定
+/sh raid start                      レイドを手動開始
+/sh raid cancel                     進行中のレイドを強制終了
+/sh raid skip                       現在のウェーブをスキップして次へ
+/sh raid status                     次のレイドまでの時間
+/sh boss spawn                      レイドボスを手動スポーン
+/sh boss cancel                     出現中のレイドボスを撤退させる
+/sh elite [SHURA|HASHA|TENMA]       視線先のモブを精鋭化
+/sh reload                          コンフィグ再読み込み
 ```
 
 ---
@@ -194,4 +220,4 @@
 
 ---
 
-*SuperHard v1.1.0 — github.com/ShotaXiangtai/superhard*
+*SuperHard v1.5.0 — github.com/ShotaXiangtai/superhard*

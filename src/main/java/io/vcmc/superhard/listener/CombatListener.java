@@ -52,6 +52,13 @@ public class CombatListener implements Listener {
             plugin.getEliteManager().handleEliteDrop(mob);
         }
 
+        // バウンティチェック
+        if (entity instanceof Mob mob) {
+            Player killer = event.getEntity().getKiller();
+            if (killer != null) plugin.getBountyManager().onBountyKill(mob, killer);
+            plugin.getBountyManager().onMobDeath(entity.getUniqueId());
+        }
+
         // プレイヤーによる撃破のみ脅威加算
         if (!(event.getEntity().getKiller() instanceof Player player)) return;
         if (player.hasPermission("superhard.bypass")) return;
@@ -137,10 +144,17 @@ public class CombatListener implements Listener {
 
         plugin.getThreatManager().applyDeathPenalty(player);
 
-        // 呪われた場所として登録（将来の拡張）
+        // 呪われた場所として登録
         if (plugin.getSHConfig().isCursedLocationsEnabled()) {
-            // TODO: CursedLocationManagerに死亡地点を記録
-            plugin.getLogger().fine("呪われた場所登録: " + player.getName() + " @ " + player.getLocation());
+            plugin.getCursedLocationManager().addDeath(player.getLocation());
+        }
+        // RAGE Lv.4+ の死亡を Discord 通知
+        if (plugin.getSHConfig().isDiscordDeathNotify()) {
+            var level = plugin.getThreatManager().getThreatLevel(player);
+            if (level.ordinal() >= ThreatManager.ThreatLevel.INFURIATED.ordinal()) {
+                plugin.getDiscordWebhook().send("💀 **" + player.getName()
+                    + "** が死亡した (RAGE " + level.displayName + ")");
+            }
         }
     }
 

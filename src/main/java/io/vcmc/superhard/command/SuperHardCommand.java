@@ -56,6 +56,7 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
             case "elite"    -> cmdElite(sender, args);
             case "boss"     -> cmdBoss(sender, args);
             case "raid"     -> cmdRaid(sender, args);
+            case "top"      -> cmdTop(sender);
             default -> { sendHelp(sender); yield true; }
         };
     }
@@ -210,21 +211,28 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         }
         switch (args[1].toLowerCase()) {
             case "start" -> {
-                if (plugin.getSiegeManager().isSiegeActive()) {
-                    sender.sendMessage(Component.text("[SuperHard] レイドはすでに進行中です。", NamedTextColor.YELLOW));
-                } else {
-                    boolean ok = plugin.getSiegeManager().manualStart();
-                    sender.sendMessage(ok
-                        ? Component.text("[SuperHard] レイドを開始しました。", NamedTextColor.GREEN)
-                        : Component.text("[SuperHard] レイドの開始に失敗しました。", NamedTextColor.RED));
-                }
+                boolean ok = plugin.getSiegeManager().manualStart();
+                sender.sendMessage(ok
+                    ? Component.text("[SuperHard] レイドを開始しました。", NamedTextColor.GREEN)
+                    : Component.text("[SuperHard] すでにレイドが進行中です。", NamedTextColor.YELLOW));
             }
-            case "status" -> {
-                sender.sendMessage(Component.text("[SuperHard] レイド状況: ", NamedTextColor.GRAY)
+            case "cancel" -> {
+                boolean ok = plugin.getSiegeManager().cancelRaid();
+                sender.sendMessage(ok
+                    ? Component.text("[SuperHard] レイドをキャンセルしました。", NamedTextColor.GREEN)
+                    : Component.text("[SuperHard] 現在レイドは進行していません。", NamedTextColor.YELLOW));
+            }
+            case "skip" -> {
+                boolean ok = plugin.getSiegeManager().skipWave();
+                sender.sendMessage(ok
+                    ? Component.text("[SuperHard] 次のウェーブにスキップしました。", NamedTextColor.GREEN)
+                    : Component.text("[SuperHard] 現在レイドは進行していません。", NamedTextColor.YELLOW));
+            }
+            case "status" -> sender.sendMessage(
+                Component.text("[SuperHard] レイド状況: ", NamedTextColor.GRAY)
                     .append(Component.text(plugin.getSiegeManager().getCountdownString(), NamedTextColor.YELLOW)));
-            }
             default -> sender.sendMessage(
-                Component.text("[SuperHard] 使い方: /sh raid <start|status>", NamedTextColor.RED));
+                Component.text("[SuperHard] 使い方: /sh raid <start|cancel|skip|status>", NamedTextColor.RED));
         }
         return true;
     }
@@ -232,23 +240,52 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
     // ---- boss ----
 
     private boolean cmdBoss(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(Component.text("[SuperHard] このコマンドはゲーム内でのみ使用できます。", NamedTextColor.RED));
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("[SuperHard] 使い方: /sh boss <spawn|cancel>", NamedTextColor.RED));
             return true;
         }
-        if (args.length < 2 || !args[1].equalsIgnoreCase("spawn")) {
-            sender.sendMessage(Component.text("[SuperHard] 使い方: /sh boss spawn", NamedTextColor.RED));
+        switch (args[1].toLowerCase()) {
+            case "spawn" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(Component.text("[SuperHard] ゲーム内でのみ使用できます。", NamedTextColor.RED));
+                    return true;
+                }
+                boolean ok = plugin.getRaidBossManager().manualSpawn(player.getLocation());
+                sender.sendMessage(ok
+                    ? Component.text("[SuperHard] レイドボスをスポーンしました。", NamedTextColor.GREEN)
+                    : Component.text("[SuperHard] すでにレイドボスが出現中です。", NamedTextColor.YELLOW));
+            }
+            case "cancel" -> {
+                boolean ok = plugin.getRaidBossManager().cancelBoss();
+                sender.sendMessage(ok
+                    ? Component.text("[SuperHard] レイドボスをキャンセルしました。", NamedTextColor.GREEN)
+                    : Component.text("[SuperHard] 現在レイドボスは出現していません。", NamedTextColor.YELLOW));
+            }
+            default -> sender.sendMessage(
+                Component.text("[SuperHard] 使い方: /sh boss <spawn|cancel>", NamedTextColor.RED));
+        }
+        return true;
+    }
+
+    // ---- top ----
+
+    private boolean cmdTop(CommandSender sender) {
+        sender.sendMessage(header("RAGE ランキング TOP 10"));
+        var entries = plugin.getThreatManager().getAllThreatsSorted();
+        if (entries.isEmpty()) {
+            sender.sendMessage(Component.text("  データがありません", NamedTextColor.GRAY));
             return true;
         }
-        if (plugin.getRaidBossManager().hasActiveBoss()) {
-            sender.sendMessage(Component.text("[SuperHard] レイドボスはすでに出現中です。", NamedTextColor.YELLOW));
-            return true;
-        }
-        boolean ok = plugin.getRaidBossManager().manualSpawn(player.getLocation());
-        if (ok) {
-            sender.sendMessage(Component.text("[SuperHard] レイドボスをスポーンしました。", NamedTextColor.GREEN));
-        } else {
-            sender.sendMessage(Component.text("[SuperHard] スポーンに失敗しました。", NamedTextColor.RED));
+        int rank = 1;
+        for (var entry : entries) {
+            if (rank > 10) break;
+            String name = plugin.getServer().getOfflinePlayer(entry.getKey()).getName();
+            if (name == null) name = entry.getKey().toString().substring(0, 8);
+            var level = ThreatManager.ThreatLevel.fromPoints(entry.getValue());
+            sender.sendMessage(Component.text("  #" + rank + " " + name + ": ", NamedTextColor.GRAY)
+                .append(Component.text(entry.getValue() + "pt ", NamedTextColor.YELLOW))
+                .append(Component.text("[" + level.displayName + "]", level.color)));
+            rank++;
         }
         return true;
     }
@@ -263,9 +300,9 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(cmd("/sh siege", "包囲戦の状態確認"));
         sender.sendMessage(cmd("/sh reload", "コンフィグ再読み込み"));
         sender.sendMessage(cmd("/sh elite [SHURA|HASHA|TENMA]", "視線先のモブを精鋭化"));
-        sender.sendMessage(cmd("/sh raid start",               "レイドを手動開始"));
-        sender.sendMessage(cmd("/sh raid status",              "次のレイドまでの時間"));
-        sender.sendMessage(cmd("/sh boss spawn",               "レイドボスを手動スポーン"));
+        sender.sendMessage(cmd("/sh top",                        "RAGE ランキング TOP10"));
+        sender.sendMessage(cmd("/sh raid <start|cancel|skip|status>", "レイド管理"));
+        sender.sendMessage(cmd("/sh boss <spawn|cancel>",      "レイドボス管理"));
     }
 
     // ---- フォーマットヘルパー ----
@@ -292,7 +329,7 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("superhard.admin")) return List.of();
 
         if (args.length == 1) {
-            return Arrays.asList("status", "threat", "setlevel", "reload", "elite", "raid", "boss")
+            return Arrays.asList("status", "threat", "setlevel", "reload", "elite", "raid", "boss", "top")
                 .stream().filter(s -> s.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
         }
 
@@ -300,7 +337,10 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
             return List.of("spawn");
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("raid")) {
-            return List.of("start", "status");
+            return List.of("start", "cancel", "skip", "status");
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("boss")) {
+            return List.of("spawn", "cancel");
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("elite")) {

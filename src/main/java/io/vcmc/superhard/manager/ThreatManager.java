@@ -10,6 +10,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -196,7 +197,13 @@ public class ThreatManager {
     }
 
     public void removePlayer(UUID id) {
-        // メモリから除去（セーブはshutdown時）
         levelCache.remove(id);
+    }
+
+    /** /sh top 用: スコア降順でソートしたエントリ一覧 */
+    public List<Map.Entry<UUID, Integer>> getAllThreatsSorted() {
+        return threatMap.entrySet().stream()
+            .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+            .collect(java.util.stream.Collectors.toList());
     }
 }

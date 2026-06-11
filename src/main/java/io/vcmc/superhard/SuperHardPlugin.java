@@ -9,10 +9,13 @@ import io.vcmc.superhard.listener.CombatListener;
 import io.vcmc.superhard.listener.CraftingListener;
 import io.vcmc.superhard.listener.MobSpawnListener;
 import io.vcmc.superhard.listener.PlayerListener;
+import io.vcmc.superhard.manager.BountyManager;
+import io.vcmc.superhard.manager.CursedLocationManager;
 import io.vcmc.superhard.manager.EliteManager;
 import io.vcmc.superhard.manager.MobBehaviorManager;
 import io.vcmc.superhard.manager.SiegeManager;
 import io.vcmc.superhard.manager.ThreatManager;
+import io.vcmc.superhard.util.DiscordWebhook;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class SuperHardPlugin extends JavaPlugin {
@@ -26,6 +29,9 @@ public final class SuperHardPlugin extends JavaPlugin {
     private MobBehaviorManager behaviorManager;
     private RaidBossManager raidBossManager;
     private AuraSkillsIntegration auraSkillsIntegration;
+    private CursedLocationManager cursedLocationManager;
+    private BountyManager bountyManager;
+    private DiscordWebhook discordWebhook;
 
     @Override
     public void onEnable() {
@@ -34,11 +40,14 @@ public final class SuperHardPlugin extends JavaPlugin {
         saveDefaultConfig();
         shConfig = new SHConfig(this);
 
-        threatManager   = new ThreatManager(this);
-        eliteManager    = new EliteManager(this);
-        siegeManager    = new SiegeManager(this);
-        behaviorManager = new MobBehaviorManager(this);
-        raidBossManager = new RaidBossManager(this);
+        discordWebhook        = new DiscordWebhook(this);
+        cursedLocationManager = new CursedLocationManager(this);
+        bountyManager         = new BountyManager(this);
+        threatManager         = new ThreatManager(this);
+        eliteManager          = new EliteManager(this);
+        siegeManager          = new SiegeManager(this);
+        behaviorManager       = new MobBehaviorManager(this);
+        raidBossManager       = new RaidBossManager(this);
 
         // AuraSkills ソフト連携（入っている場合のみ有効化）
         if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {
@@ -82,7 +91,10 @@ public final class SuperHardPlugin extends JavaPlugin {
     public ThreatManager getThreatManager()     { return threatManager; }
     public EliteManager getEliteManager()       { return eliteManager; }
     public SiegeManager getSiegeManager()       { return siegeManager; }
-    public MobBehaviorManager getBehaviorManager()       { return behaviorManager; }
-    public RaidBossManager getRaidBossManager()          { return raidBossManager; }
+    public MobBehaviorManager getBehaviorManager()          { return behaviorManager; }
+    public RaidBossManager getRaidBossManager()             { return raidBossManager; }
     public AuraSkillsIntegration getAuraSkillsIntegration() { return auraSkillsIntegration; }
+    public CursedLocationManager getCursedLocationManager() { return cursedLocationManager; }
+    public BountyManager getBountyManager()                 { return bountyManager; }
+    public DiscordWebhook getDiscordWebhook()               { return discordWebhook; }
 }

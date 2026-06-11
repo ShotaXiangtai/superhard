@@ -231,6 +231,36 @@ public class SHConfig {
         return cfg().getInt("cursed-locations.max-locations", 50);
     }
 
+    // ---- Discord Webhook ----
+
+    public String getDiscordWebhookUrl() {
+        return cfg().getString("discord.webhook-url", "none");
+    }
+    public boolean isDiscordRaidNotify()  { return cfg().getBoolean("discord.notify-raid-start", true); }
+    public boolean isDiscordBossNotify()  { return cfg().getBoolean("discord.notify-boss-spawn", true); }
+    public boolean isDiscordDeathNotify() { return cfg().getBoolean("discord.notify-player-death", true); }
+
+    // ---- スポーンキャップ ----
+
+    public boolean isEnhancedMobCapEnabled() { return cfg().getBoolean("mob-cap.enabled", true); }
+    public int getEnhancedMobCap()    { return cfg().getInt("mob-cap.max-nearby-enhanced", 20); }
+    public int getSummonNearbyCap()   { return cfg().getInt("mob-cap.max-summon-nearby",   12); }
+
+    // ---- バウンティ ----
+
+    public boolean isBountyEnabled()   { return cfg().getBoolean("bounty.enabled", true); }
+    public double  getBountyChance()   { return cfg().getDouble ("bounty.chance",   0.08); }
+    public int     getBountyExtraShards() { return cfg().getInt ("bounty.extra-shards", 3); }
+
+    // ---- 村人保護 ----
+
+    public boolean isVillagerProtectionEnabled() {
+        return cfg().getBoolean("villager-protection.enabled", true);
+    }
+    public double getVillagerProtectionRadius() {
+        return cfg().getDouble("villager-protection.radius", 25.0);
+    }
+
     // ---- メッセージ ----
 
     public String getMessage(String key) {

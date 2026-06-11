@@ -44,6 +44,7 @@ public class SiegeManager {
 
     private BukkitTask checkTask;
     private BukkitTask displayTask;
+    private final List<BukkitTask> scheduledTasks = new ArrayList<>();
 
     private boolean siegeActive = false;
     private int     currentWave = 0;
@@ -156,14 +157,70 @@ public class SiegeManager {
         // ActionBar 表示タスク開始
         startDisplayTask();
 
-        // ウェーブスケジュール
+        // ウェーブスケジュール（キャンセル可能にタスクを保持）
+        scheduleWaves(60L);
+
+        // Discord 通知
+        if (plugin.getSHConfig().isDiscordRaidNotify()) {
+            plugin.getDiscordWebhook().send("⚔ **RAID** が始まった！");
+        }
+    }
+
+    /** ウェーブをスケジュールして scheduledTasks に登録する */
+    private void scheduleWaves(long startDelayTicks) {
+        scheduledTasks.forEach(t -> { if (!t.isCancelled()) t.cancel(); });
+        scheduledTasks.clear();
         long interval = plugin.getSHConfig().getWaveIntervalTicks();
         int  waves    = plugin.getSHConfig().getWaveCount();
         for (int w = 1; w <= waves; w++) {
             final int wave = w;
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> spawnWave(wave), 60L + interval * (wave - 1));
+            scheduledTasks.add(plugin.getServer().getScheduler().runTaskLater(plugin,
+                () -> { if (siegeActive) spawnWave(wave); },
+                startDelayTicks + interval * (wave - 1)));
         }
-        plugin.getServer().getScheduler().runTaskLater(plugin, this::endRaid, 60L + interval * waves);
+        scheduledTasks.add(plugin.getServer().getScheduler().runTaskLater(plugin,
+            this::endRaid, startDelayTicks + interval * waves));
+    }
+
+    /** 管理者コマンドによるレイド強制終了 */
+    public boolean cancelRaid() {
+        if (!siegeActive) return false;
+        scheduledTasks.forEach(t -> { if (!t.isCancelled()) t.cancel(); });
+        scheduledTasks.clear();
+        if (displayTask != null) displayTask.cancel();
+        for (World world : Bukkit.getWorlds()) {
+            world.getEntities().stream()
+                .filter(e -> siegeMobs.contains(e.getUniqueId()))
+                .forEach(Entity::remove);
+        }
+        siegeMobs.clear();
+        siegeActive = false;
+        currentWave = 0;
+        Bukkit.getOnlinePlayers().forEach(p ->
+            p.sendMessage(Component.text("[SuperHard] レイドがキャンセルされた。", NamedTextColor.YELLOW)));
+        plugin.getDiscordWebhook().send("⚠ RAID がキャンセルされた。");
+        return true;
+    }
+
+    /** 現在ウェーブをスキップして次ウェーブへ即移行 */
+    public boolean skipWave() {
+        if (!siegeActive) return false;
+        scheduledTasks.forEach(t -> { if (!t.isCancelled()) t.cancel(); });
+        scheduledTasks.clear();
+        int nextWave = currentWave + 1;
+        int totalWaves = plugin.getSHConfig().getWaveCount();
+        if (nextWave > totalWaves) {
+            endRaid();
+        } else {
+            spawnWave(nextWave);
+            scheduleWaves(0L); // 残りウェーブを再スケジュール (spawnWaveは即実行済みなので次から)
+            // ただしすでに実行したウェーブの分は被らないよう先頭を除外
+            if (!scheduledTasks.isEmpty()) {
+                BukkitTask duplicate = scheduledTasks.remove(0);
+                if (!duplicate.isCancelled()) duplicate.cancel();
+            }
+        }
+        return true;
     }
 
     // ============================================================
@@ -234,7 +291,8 @@ public class SiegeManager {
 
         int spawned = 0;
         for (int i = 0; i < count; i++) {
-            Location spawnLoc = SHUtil.safeSpawnNear(base, 15, 30);
+            Location spawnLoc = safeSpawnAvoidVillagers(base, 15, 30);
+            if (spawnLoc == null) continue;
             spawnLoc.setWorld(base.getWorld());
             Entity entity = base.getWorld().spawn(spawnLoc, types.get(i % types.size()).getEntityClass());
             if (entity instanceof Mob mob) {
@@ -271,7 +329,11 @@ public class SiegeManager {
     // ============================================================
 
     private void endRaid() {
+        if (!siegeActive) return;
+        boolean completedAllWaves = currentWave >= plugin.getSHConfig().getWaveCount();
         siegeActive = false;
+        scheduledTasks.forEach(t -> { if (!t.isCancelled()) t.cancel(); });
+        scheduledTasks.clear();
         if (displayTask != null) { displayTask.cancel(); displayTask = null; }
 
         for (World world : Bukkit.getWorlds()) {
@@ -284,6 +346,38 @@ public class SiegeManager {
         Bukkit.getOnlinePlayers().forEach(p ->
             p.sendMessage(Component.text(
                 plugin.getSHConfig().getMessage("siege-end-message"), NamedTextColor.GOLD)));
+
+        // 全ウェーブ完了時の生存報酬
+        if (completedAllWaves) giveRaidRewards();
+    }
+
+    private void giveRaidRewards() {
+        int shards = 2 + plugin.getSHConfig().getWaveCount();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.hasPermission("superhard.bypass")) continue;
+            for (int i = 0; i < shards; i++) {
+                p.getWorld().dropItemNaturally(p.getLocation(),
+                    plugin.getEliteManager().createTemperedShard());
+            }
+            p.sendMessage(Component.text(
+                "[SuperHard] レイド生存報酬: 鋼 ×" + shards, NamedTextColor.GOLD));
+            var aura = plugin.getAuraSkillsIntegration();
+            if (aura != null) aura.grantRaidSurvivalXp(p);
+        }
+        plugin.getDiscordWebhook().send("⚔ RAID が終了。全ウェーブクリア！");
+    }
+
+    /** 村人の近くを避けてスポーン地点を返す。見つからなければ null */
+    private Location safeSpawnAvoidVillagers(Location base, double minR, double maxR) {
+        double vr = plugin.getSHConfig().getVillagerProtectionRadius();
+        boolean protect = plugin.getSHConfig().isVillagerProtectionEnabled();
+        for (int attempt = 0; attempt < 5; attempt++) {
+            Location loc = SHUtil.safeSpawnNear(base, minR, maxR);
+            if (!protect) return loc;
+            if (loc.getWorld().getNearbyEntities(loc, vr, vr, vr,
+                    e -> e instanceof org.bukkit.entity.Villager).isEmpty()) return loc;
+        }
+        return null;
     }
 
     // ============================================================

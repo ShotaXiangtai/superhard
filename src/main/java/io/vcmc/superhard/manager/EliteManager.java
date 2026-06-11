@@ -131,6 +131,9 @@ public class EliteManager {
         // 出現サウンド演出
         playEliteSpawnSound(mob, type);
 
+        // バウンティロール
+        plugin.getBountyManager().tryAssignBounty(mob, type);
+
         // 付近プレイヤーへの通知
         mob.getWorld().getNearbyPlayers(mob.getLocation(), 40).forEach(p ->
             p.sendMessage(Component.text("[SuperHard] ", NamedTextColor.DARK_RED)

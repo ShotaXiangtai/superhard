@@ -189,6 +189,37 @@ cursed-locations:
   # 最大登録数
   max-locations: 50
 
+# ---- Discord Webhook ----
+discord:
+  # Discord の Webhook URL。"none" のままにすると無効
+  webhook-url: "none"
+  notify-raid-start: true
+  notify-boss-spawn: true
+  # RAGE Lv.4+ のプレイヤー死亡のみ通知
+  notify-player-death: true
+
+# ---- スポーンキャップ（RAGEが高すぎてもMOBが出すぎないように） ----
+mob-cap:
+  enabled: true
+  # この範囲内(24ブロック)にモンスターがこの数以上いたら強化しない
+  max-nearby-enhanced: 20
+  # ゾンビの仲間召喚前に近隣モブがこの数以上なら召喚しない
+  max-summon-nearby: 12
+
+# ---- バウンティシステム ----
+bounty:
+  enabled: true
+  # 精鋭 Lv.2/3 がバウンティになる確率
+  chance: 0.08
+  # バウンティ討伐時のボーナス鋼
+  extra-shards: 3
+
+# ---- 村人保護 ----
+villager-protection:
+  enabled: true
+  # 村人のこの半径内にはレイド/ボスモブをスポーンしない
+  radius: 25
+
 # ---- メッセージ設定 ----
 messages:
   siege-start-title: "§c⚔ 包囲戦 ⚔"

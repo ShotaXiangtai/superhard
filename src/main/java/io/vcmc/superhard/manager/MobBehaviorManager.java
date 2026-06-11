@@ -171,7 +171,14 @@ public class MobBehaviorManager {
 
     private void trySummonZombies(Zombie zombie, Player player) {
         if (!SHUtil.chance(0.6)) return;
-        int count = SHUtil.randomInt(1, 3);
+        // スポーンキャップ: 近くにモブが多すぎたら召喚しない
+        if (plugin.getSHConfig().isEnhancedMobCapEnabled()) {
+            long nearby = zombie.getWorld()
+                .getNearbyEntities(zombie.getLocation(), 16, 8, 16, e -> e instanceof Monster)
+                .size();
+            if (nearby >= plugin.getSHConfig().getSummonNearbyCap()) return;
+        }
+        int count = SHUtil.randomInt(1, 2); // 1-3 → 1-2 に削減
         for (int i = 0; i < count; i++) {
             Location spawnLoc = SHUtil.safeSpawnNear(zombie.getLocation(), 3, 8);
             Zombie summon = zombie.getWorld().spawn(spawnLoc, Zombie.class);

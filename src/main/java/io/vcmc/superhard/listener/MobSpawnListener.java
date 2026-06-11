@@ -49,6 +49,14 @@ public class MobSpawnListener implements Listener {
 
         ThreatLevel threat = plugin.getThreatManager().getThreatLevel(nearest);
 
+        // スポーンキャップ: 近くに強化済みモブが多すぎたらスキップ
+        if (plugin.getSHConfig().isEnhancedMobCapEnabled()) {
+            long nearbyMonsters = mob.getWorld()
+                .getNearbyEntities(mob.getLocation(), 24, 24, 24, e -> e instanceof Monster)
+                .size();
+            if (nearbyMonsters >= plugin.getSHConfig().getEnhancedMobCap()) return;
+        }
+
         // HP倍率を適用
         applyHpMultiplier(mob, threat);
 
@@ -71,7 +79,11 @@ public class MobSpawnListener implements Listener {
 
     private void applyCursedBonus(Mob mob) {
         if (!plugin.getSHConfig().isCursedLocationsEnabled()) return;
-        // CursedLocationManagerへの呼び出しは将来実装
-        // 現在: 呪われた場所判定をSiegeManagerのデータと統合予定
+        if (!plugin.getCursedLocationManager().isNearCursed(mob.getLocation())) return;
+        AttributeInstance attr = mob.getAttribute(Attribute.MAX_HEALTH);
+        if (attr == null) return;
+        double newHp = attr.getBaseValue() * plugin.getSHConfig().getCursedHpBonus();
+        attr.setBaseValue(newHp);
+        mob.setHealth(newHp);
     }
 }

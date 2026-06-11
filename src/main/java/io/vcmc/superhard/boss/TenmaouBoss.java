@@ -297,8 +297,11 @@ public class TenmaouBoss {
         plugin.getServer().getScheduler().runTaskLater(plugin, () ->
             loc.getWorld().playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 0.8f), 5L);
 
-        // 参加者への報酬
         broadcastAll(Component.text("レイドボスを討伐した！", NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+        plugin.getDiscordWebhook().send("🏆 **レイドボス**が討伐された！参加者: "
+            + participants.stream()
+                .map(id -> { var p = Bukkit.getPlayer(id); return p != null ? p.getName() : "?"; })
+                .reduce((a, b) -> a + ", " + b).orElse("不明"));
         rewardParticipants();
 
         finish();
@@ -458,6 +461,14 @@ public class TenmaouBoss {
     private void finish() {
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         bossBar.removeAll();
+        plugin.getRaidBossManager().onBossFinished(entity.getUniqueId());
+    }
+
+    /** 管理者コマンドによる強制キャンセル（報酬なし） */
+    public void cancel() {
+        if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
+        bossBar.removeAll();
+        if (entity.isValid()) entity.remove();
         plugin.getRaidBossManager().onBossFinished(entity.getUniqueId());
     }
 

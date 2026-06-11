@@ -91,6 +91,13 @@ public class AuraSkillsIntegration {
         grantXp(player, defenseSkill,  2000.0);
     }
 
+    /** レイド生存報酬XP */
+    public void grantRaidSurvivalXp(Player player) {
+        if (!ready) return;
+        grantXp(player, fightingSkill, 500.0);
+        grantXp(player, defenseSkill,  200.0);
+    }
+
     private void grantXp(Player player, Object skill, double amount) {
         try {
             Object user = getUserMethod.invoke(api, player.getUniqueId());

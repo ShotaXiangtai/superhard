@@ -1,0 +1,187 @@
+# ============================================================
+#  SuperHard Configuration
+#  Hard SMP challenge plugin for Minecraft 26.1.2
+# ============================================================
+
+# ---- 全体設定 ----
+enabled: true
+
+# ---- 脅威スコアシステム ----
+threat:
+  # 1分ごとの自動増加量
+  passive-gain-per-minute: 3
+  # 通常モブ撃破時のスコア加算
+  kill-points:
+    zombie: 2
+    skeleton: 2
+    creeper: 3
+    spider: 2
+    witch: 5
+    enderman: 6
+    pillager: 4
+    vindicator: 5
+    phantom: 3
+    blaze: 4
+    wither_skeleton: 5
+    default: 2
+  # ボス撃破時
+  boss-kill-points:
+    wither: 150
+    ender_dragon: 200
+    elder_guardian: 100
+  # 1日生存するたびに減少するポイント（生存報酬）
+  day-survival-reward: 40
+  # プレイヤー死亡時の減少率
+  death-penalty-percent: 30
+  # 脅威レベルの閾値
+  thresholds:
+    calm: 0
+    agitated: 100
+    hostile: 300
+    infuriated: 700
+    wrathful: 1500
+
+# ---- 精鋭モブシステム ----
+elites:
+  enabled: true
+  # 各脅威レベルでの精鋭出現基礎確率
+  base-chances:
+    calm: 0.02
+    agitated: 0.05
+    hostile: 0.10
+    infuriated: 0.18
+    wrathful: 0.28
+  # 精鋭タイプ別のHP倍率
+  hp-multipliers:
+    forged: 1.25
+    ancient: 1.60
+    harbinger: 2.00
+  # 精鋭タイプ別のダメージ倍率
+  damage-multipliers:
+    forged: 1.15
+    ancient: 1.35
+    harbinger: 1.60
+  # 精鋭が鍛えの欠片をドロップする確率
+  shard-drop-chance: 0.40
+
+# ---- モブAI強化 ----
+behavior:
+  enabled: true
+  # グローバルティックごとに処理する最大モブ数（パフォーマンス調整）
+  max-mobs-per-tick: 30
+  # AI強化が有効になる最低脅威レベル
+  min-threat-level: CALM
+
+  zombie:
+    leap-enabled: true
+    leap-cooldown-sec: 4
+    scaffold-enabled: true
+    scaffold-cooldown-sec: 12
+    summon-enabled: true
+    summon-cooldown-sec: 30
+    block-break-enabled: true
+
+  skeleton:
+    strafe-enabled: true
+    strafe-cooldown-sec: 2
+    backstep-enabled: true
+    backstep-cooldown-sec: 5
+    weapon-switch-enabled: true
+
+  creeper:
+    invisible-approach-enabled: true
+    fire-trail-enabled: true
+    survive-first-explosion: true
+
+  spider:
+    web-enabled: true
+    web-cooldown-sec: 8
+    web-lifetime-sec: 25
+    projectile-enabled: true
+    projectile-cooldown-sec: 6
+
+  witch:
+    buff-aura-enabled: true
+    buff-cooldown-sec: 6
+    teleport-enabled: true
+    teleport-cooldown-sec: 4
+
+  enderman:
+    auto-aggro-enabled: true
+    auto-aggro-range: 16
+    minion-summon-enabled: true
+    minion-summon-cooldown-sec: 30
+    freeze-water-enabled: true
+
+# ---- モブHP倍率（脅威レベルごと） ----
+mob-hp:
+  calm: 1.00
+  agitated: 1.10
+  hostile: 1.25
+  infuriated: 1.45
+  wrathful: 1.70
+
+# ---- パック戦術システム ----
+pack-tactics:
+  enabled: true
+  # 同種モブが警報を受け取る範囲
+  alert-range: 20
+  # アルファモブのHP倍率
+  alpha-hp-bonus: 1.30
+  # アルファモブのスピード倍率
+  alpha-speed-bonus: 1.15
+
+# ---- 包囲戦システム ----
+siege:
+  enabled: true
+  # 各深夜に包囲戦が始まる確率
+  trigger-chance-per-night: 0.07
+  # 包囲戦の最小間隔（ゲーム内日数）
+  min-days-between-sieges: 3
+  # ウェーブ数
+  wave-count: 3
+  # ウェーブ間隔（秒）
+  wave-interval-sec: 60
+  # 拠点ごとのウェーブスポーン数（人数ではなく拠点単位）
+  wave1-mobs-per-base: 6
+  wave2-mobs-per-base: 8
+  wave3-mobs-per-base: 7
+  # 最終ウェーブで精鋭モブをスポーン（拠点ごとに1体）
+  final-wave-elite: true
+  # サーバー全体のモブ上限（大人数SMP向け、これ以上はスポーンしない）
+  server-mob-cap: 40
+  # この半径内の拠点を同一拠点として扱う（ブロック数）
+  base-merge-radius: 50
+
+# ---- 鍛えの欠片システム ----
+tempered:
+  enabled: true
+  # アンビルで欠片+装備→鍛えられた装備
+  anvil-recipe-enabled: true
+  # 鍛えられた装備のボーナス（Unbreaking付与レベル）
+  unbreaking-level: 3
+  # 追加耐久ボーナス（%）
+  durability-bonus-percent: 50
+
+# ---- 呪われた場所システム ----
+cursed-locations:
+  enabled: true
+  # プレイヤーが死亡した場所を呪われた場所として登録する
+  track-death-locations: true
+  # 呪われた場所の有効半径（ブロック）
+  radius: 20
+  # 呪われた場所でのモブHP追加倍率
+  hp-bonus-multiplier: 1.20
+  # 呪われた場所の持続日数（ゲーム内）
+  duration-days: 7
+  # 最大登録数
+  max-locations: 50
+
+# ---- メッセージ設定 ----
+messages:
+  siege-start-title: "§c⚔ 包囲戦 ⚔"
+  siege-start-subtitle: "§7モブの大群が迫ってくる！"
+  siege-wave-message: "§4[SuperHard] §c包囲戦 第%waveウェーブ！"
+  siege-end-message: "§6[SuperHard] §e包囲戦が終わった。よく生き延びた。"
+  threat-level-up: "§c[SuperHard] §7脅威レベル上昇 → %level"
+  elite-spawn-nearby: "§c[SuperHard] §7近くに精鋭モブが現れた！"

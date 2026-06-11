@@ -1,0 +1,25 @@
+name: SuperHard
+version: '${version}'
+main: io.vcmc.superhard.SuperHardPlugin
+api-version: '26.1'
+description: Hard SMP challenge plugin inspired by True Crafter Mode
+authors: [vcmc]
+folia-supported: false
+
+commands:
+  superhard:
+    description: SuperHard plugin management command
+    usage: /<command> <status|threat|siege|reload|setlevel>
+    aliases: [sh, superh]
+    permission: superhard.admin
+
+permissions:
+  superhard.admin:
+    description: Access to all SuperHard admin commands
+    default: op
+  superhard.bypass:
+    description: Bypass SuperHard threat effects (for builders/staff)
+    default: false
+  superhard.notify:
+    description: Receive siege/threat notifications
+    default: op

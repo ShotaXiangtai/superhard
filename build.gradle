@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+}
+
+group   = 'io.vcmc'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'papermc'
+        url  = uri('https://repo.papermc.io/repository/maven-public/')
+    }
+}
+
+dependencies {
+    // Paper 26.1.2。アーティファクトが解決できない場合は https://repo.papermc.io で確認。
+    // Attribute.GENERIC_MAX_HEALTH が見つからない場合は Attribute.MAX_HEALTH に一括置換。
+    compileOnly 'io.papermc.paper:paper-api:26.1.2.build.69-stable'
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.release  = 21
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties(props)
+    filteringCharset = 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand(props)
+    }
+}

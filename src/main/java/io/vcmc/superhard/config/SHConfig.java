@@ -171,6 +171,16 @@ public class SHConfig {
         return cfg().getBoolean("siege.final-wave-elite", true);
     }
 
+    // ---- レイドスケジュール ----
+
+    public long getSiegeMinIntervalHours() {
+        return cfg().getLong("siege.min-interval-hours", 6);
+    }
+
+    public long getSiegeMaxIntervalHours() {
+        return cfg().getLong("siege.max-interval-hours", 18);
+    }
+
     // ---- レイドボススケジュール ----
 
     public boolean isBossAutoSpawnEnabled() {

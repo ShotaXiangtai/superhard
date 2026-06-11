@@ -23,8 +23,9 @@ public class PlayerListener implements Listener {
         var player = event.getPlayer();
         plugin.getThreatManager().initPlayer(player.getUniqueId());
 
-        // pending スポーンのチェック（オフライン中に時刻を過ぎていた場合）
+        // pending チェック
         plugin.getRaidBossManager().onPlayerJoin(player);
+        plugin.getSiegeManager().onPlayerJoin();
 
         if (player.hasPermission("superhard.bypass")) return;
 
@@ -45,14 +46,8 @@ public class PlayerListener implements Listener {
 
             // レイドボス降臨カウントダウン
             player.sendMessage(plugin.getRaidBossManager().getLoginStatusComponent());
-
-            // レイド中なら警告
-            if (plugin.getSiegeManager().isSiegeActive()) {
-                player.sendMessage(Component.text(
-                    "[SuperHard] ⚠ レイド進行中！ Wave " + plugin.getSiegeManager().getCurrentWave(),
-                    NamedTextColor.DARK_RED
-                ));
-            }
+            // レイドカウントダウン
+            player.sendMessage(plugin.getSiegeManager().getLoginStatusComponent());
         }, 40L);
     }
 

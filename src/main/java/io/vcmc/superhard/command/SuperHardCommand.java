@@ -55,6 +55,7 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
             case "reload"   -> cmdReload(sender);
             case "elite"    -> cmdElite(sender, args);
             case "boss"     -> cmdBoss(sender, args);
+            case "raid"     -> cmdRaid(sender, args);
             default -> { sendHelp(sender); yield true; }
         };
     }
@@ -200,6 +201,34 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // ---- raid ----
+
+    private boolean cmdRaid(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("[SuperHard] 使い方: /sh raid <start|status>", NamedTextColor.RED));
+            return true;
+        }
+        switch (args[1].toLowerCase()) {
+            case "start" -> {
+                if (plugin.getSiegeManager().isSiegeActive()) {
+                    sender.sendMessage(Component.text("[SuperHard] レイドはすでに進行中です。", NamedTextColor.YELLOW));
+                } else {
+                    boolean ok = plugin.getSiegeManager().manualStart();
+                    sender.sendMessage(ok
+                        ? Component.text("[SuperHard] レイドを開始しました。", NamedTextColor.GREEN)
+                        : Component.text("[SuperHard] レイドの開始に失敗しました。", NamedTextColor.RED));
+                }
+            }
+            case "status" -> {
+                sender.sendMessage(Component.text("[SuperHard] レイド状況: ", NamedTextColor.GRAY)
+                    .append(Component.text(plugin.getSiegeManager().getCountdownString(), NamedTextColor.YELLOW)));
+            }
+            default -> sender.sendMessage(
+                Component.text("[SuperHard] 使い方: /sh raid <start|status>", NamedTextColor.RED));
+        }
+        return true;
+    }
+
     // ---- boss ----
 
     private boolean cmdBoss(CommandSender sender, String[] args) {
@@ -234,6 +263,8 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(cmd("/sh siege", "包囲戦の状態確認"));
         sender.sendMessage(cmd("/sh reload", "コンフィグ再読み込み"));
         sender.sendMessage(cmd("/sh elite [SHURA|HASHA|TENMA]", "視線先のモブを精鋭化"));
+        sender.sendMessage(cmd("/sh raid start",               "レイドを手動開始"));
+        sender.sendMessage(cmd("/sh raid status",              "次のレイドまでの時間"));
         sender.sendMessage(cmd("/sh boss spawn",               "レイドボスを手動スポーン"));
     }
 
@@ -261,12 +292,15 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("superhard.admin")) return List.of();
 
         if (args.length == 1) {
-            return Arrays.asList("status", "threat", "setlevel", "siege", "reload", "elite", "boss")
+            return Arrays.asList("status", "threat", "setlevel", "reload", "elite", "raid", "boss")
                 .stream().filter(s -> s.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("boss")) {
             return List.of("spawn");
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("raid")) {
+            return List.of("start", "status");
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("elite")) {

@@ -136,8 +136,11 @@ siege:
   enabled: true
   # 各深夜に包囲戦が始まる確率
   trigger-chance-per-night: 0.07
-  # 包囲戦の最小間隔（ゲーム内日数）
-  min-days-between-sieges: 3
+  # レイドの発生間隔（リアル時間）
+  min-interval-hours: 6
+  max-interval-hours: 18
+  # 昼間はレイドが発生しない（ゲーム内時刻 12500〜23000 の夜時間のみ）
+  night-only: true
   # ウェーブ数
   wave-count: 3
   # ウェーブ間隔（秒）

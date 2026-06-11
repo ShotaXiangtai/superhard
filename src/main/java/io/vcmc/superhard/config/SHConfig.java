@@ -171,6 +171,20 @@ public class SHConfig {
         return cfg().getBoolean("siege.final-wave-elite", true);
     }
 
+    // ---- レイドボススケジュール ----
+
+    public boolean isBossAutoSpawnEnabled() {
+        return cfg().getBoolean("boss.auto-spawn", true);
+    }
+
+    public long getBossMinIntervalHours() {
+        return cfg().getLong("boss.min-interval-hours", 12);
+    }
+
+    public long getBossMaxIntervalHours() {
+        return cfg().getLong("boss.max-interval-hours", 24);
+    }
+
     // ---- 鍛えの欠片 ----
 
     public boolean isTemperedEnabled() {

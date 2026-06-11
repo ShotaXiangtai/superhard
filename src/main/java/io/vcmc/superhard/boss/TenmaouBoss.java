@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 天魔王 — SuperHard レイドボス。
+ * レイドボス — SuperHard レイドボス。
  *
  * 複数人で挑まないと倒せない仕組み:
  *   Phase 3 で 半径40ブロック内のプレイヤーが1人以下なら毎秒HP回復
@@ -36,7 +36,7 @@ public class TenmaouBoss {
 
     public enum Phase { PHASE1, PHASE2, PHASE3 }
 
-    private static final String BOSS_DISPLAY = "§5§l天魔王";
+    private static final String BOSS_DISPLAY = "§5§lレイドボス";
     private static final double MAX_HP = 600.0;
     private static final double SCALE  = 2.2;
 
@@ -96,7 +96,7 @@ public class TenmaouBoss {
             z.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, true, false));
 
             // カスタム名
-            z.customName(Component.text("天魔王", NamedTextColor.DARK_PURPLE)
+            z.customName(Component.text("レイドボス", NamedTextColor.DARK_PURPLE)
                 .decoration(TextDecoration.BOLD, true));
             z.setCustomNameVisible(true);
             z.setShouldBurnInDay(false);
@@ -104,7 +104,7 @@ public class TenmaouBoss {
         });
 
         // ---- BossBar ----
-        bossBar = Bukkit.createBossBar("§5§l天魔王  §7Phase I", BarColor.PURPLE, BarStyle.SEGMENTED_10);
+        bossBar = Bukkit.createBossBar("§5§lレイドボス  §7Phase I", BarColor.PURPLE, BarStyle.SEGMENTED_10);
         bossBar.setProgress(1.0);
 
         // ---- スポーン演出 ----
@@ -168,7 +168,7 @@ public class TenmaouBoss {
 
     private void enterPhase2() {
         phase = Phase.PHASE2;
-        broadcastAll(Component.text("天魔王が覚醒した——第二相", NamedTextColor.RED).decoration(TextDecoration.BOLD, true));
+        broadcastAll(Component.text("レイドボスが覚醒した——第二相", NamedTextColor.RED).decoration(TextDecoration.BOLD, true));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 0, true, false));
         playPhaseTransitionSounds();
         spawnLightningRing(entity.getLocation(), 8, 12);
@@ -176,7 +176,7 @@ public class TenmaouBoss {
 
     private void enterPhase3() {
         phase = Phase.PHASE3;
-        broadcastAll(Component.text("天魔王、絶望の終相——", NamedTextColor.DARK_RED).decoration(TextDecoration.BOLD, true));
+        broadcastAll(Component.text("レイドボス、絶望の終相——", NamedTextColor.DARK_RED).decoration(TextDecoration.BOLD, true));
         broadcastAll(Component.text("ひとりでは倒せない。仲間を集めろ。", NamedTextColor.GRAY));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,    Integer.MAX_VALUE, 1, true, false));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 1, true, false));
@@ -271,7 +271,7 @@ public class TenmaouBoss {
             double healAmount = maxHp * 0.02; // 2%
             entity.setHealth(Math.min(entity.getHealth() + healAmount, maxHp));
             for (Player p : nearbyPlayers) {
-                p.sendActionBar(Component.text("⚠ 孤独への裁き ——天魔王が回復している！ ⚠", NamedTextColor.DARK_RED));
+                p.sendActionBar(Component.text("⚠ 孤独への裁き ——レイドボスが回復している！ ⚠", NamedTextColor.DARK_RED));
             }
         }
     }
@@ -298,7 +298,7 @@ public class TenmaouBoss {
             loc.getWorld().playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 0.8f), 5L);
 
         // 参加者への報酬
-        broadcastAll(Component.text("天魔王を討伐した！", NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
+        broadcastAll(Component.text("レイドボスを討伐した！", NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true));
         rewardParticipants();
 
         finish();
@@ -318,7 +318,7 @@ public class TenmaouBoss {
             var aura = plugin.getAuraSkillsIntegration();
             if (aura != null) aura.grantRaidBossKillXp(p);
 
-            p.sendMessage(Component.text("[SuperHard] 天魔王討伐報酬: ソウルシャード x12", NamedTextColor.GOLD));
+            p.sendMessage(Component.text("[SuperHard] レイドボス討伐報酬: ソウルシャード x12", NamedTextColor.GOLD));
         }
     }
 
@@ -349,7 +349,7 @@ public class TenmaouBoss {
         plugin.getServer().getScheduler().runTaskLater(plugin, () ->
             Bukkit.getOnlinePlayers().forEach(p -> {
                 p.showTitle(net.kyori.adventure.title.Title.title(
-                    Component.text("天魔王", NamedTextColor.DARK_PURPLE).decoration(TextDecoration.BOLD, true),
+                    Component.text("レイドボス", NamedTextColor.DARK_PURPLE).decoration(TextDecoration.BOLD, true),
                     Component.text("全員で挑め。ひとりでは死ぬだけだ。", NamedTextColor.GRAY),
                     net.kyori.adventure.title.Title.Times.times(
                         java.time.Duration.ofMillis(500),
@@ -429,7 +429,7 @@ public class TenmaouBoss {
             case PHASE2 -> "§cPhase II — 覚醒";
             case PHASE3 -> "§4Phase III — 絶望";
         };
-        bossBar.setTitle("§5§l天魔王  " + phaseLabel);
+        bossBar.setTitle("§5§lレイドボス  " + phaseLabel);
         bossBar.setColor(switch (phase) {
             case PHASE1 -> BarColor.PURPLE;
             case PHASE2 -> BarColor.RED;

@@ -62,6 +62,7 @@ public final class SuperHardPlugin extends JavaPlugin {
         threatManager.load();
         behaviorManager.start();
         siegeManager.start();
+        raidBossManager.start();
 
         getLogger().info("SuperHard が有効化されました！ Hard SMPへようこそ。");
         getLogger().info("バージョン: " + getDescription().getVersion());

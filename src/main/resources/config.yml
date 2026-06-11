@@ -153,6 +153,15 @@ siege:
   # この半径内の拠点を同一拠点として扱う（ブロック数）
   base-merge-radius: 50
 
+# ---- レイドボス自動スポーン ----
+boss:
+  # 自動スポーンを有効にする
+  auto-spawn: true
+  # 前回討伐（or 初回起動）から次の降臨までの最小時間
+  min-interval-hours: 12
+  # 最大時間（これを超えることはない = 毎日最低1回保証）
+  max-interval-hours: 24
+
 # ---- 鍛えの欠片システム ----
 tempered:
   enabled: true

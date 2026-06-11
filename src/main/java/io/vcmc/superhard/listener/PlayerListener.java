@@ -10,9 +10,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-/**
- * プレイヤーの接続・切断時の脅威データ管理。
- */
 public class PlayerListener implements Listener {
 
     private final SuperHardPlugin plugin;
@@ -26,30 +23,37 @@ public class PlayerListener implements Listener {
         var player = event.getPlayer();
         plugin.getThreatManager().initPlayer(player.getUniqueId());
 
+        // pending スポーンのチェック（オフライン中に時刻を過ぎていた場合）
+        plugin.getRaidBossManager().onPlayerJoin(player);
+
         if (player.hasPermission("superhard.bypass")) return;
 
-        ThreatManager.ThreatLevel level = plugin.getThreatManager().getThreatLevel(player);
+        ThreatManager.ThreatLevel level  = plugin.getThreatManager().getThreatLevel(player);
         int points = plugin.getThreatManager().getThreat(player);
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) return;
-            player.sendMessage(Component.text(
-                "[SuperHard] 現在の脅威スコア: ", NamedTextColor.GRAY
-            ).append(Component.text(
-                points + " pt", NamedTextColor.YELLOW
-            )).append(Component.text(
-                " / レベル: ", NamedTextColor.GRAY
-            )).append(Component.text(
-                level.displayName, level.color
-            )));
 
+            // RAGE スコア
+            player.sendMessage(
+                Component.text("[SuperHard] ", NamedTextColor.DARK_GRAY)
+                    .append(Component.text("RAGE: ", NamedTextColor.GRAY))
+                    .append(Component.text(points + " pt ", NamedTextColor.YELLOW))
+                    .append(Component.text("/ ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(level.displayName, level.color))
+            );
+
+            // レイドボス降臨カウントダウン
+            player.sendMessage(plugin.getRaidBossManager().getLoginStatusComponent());
+
+            // レイド中なら警告
             if (plugin.getSiegeManager().isSiegeActive()) {
                 player.sendMessage(Component.text(
-                    "[SuperHard] 警告: 現在包囲戦が進行中！ 第" + plugin.getSiegeManager().getCurrentWave() + "ウェーブ",
+                    "[SuperHard] ⚠ レイド進行中！ Wave " + plugin.getSiegeManager().getCurrentWave(),
                     NamedTextColor.DARK_RED
                 ));
             }
-        }, 40L); // ログイン2秒後に表示
+        }, 40L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

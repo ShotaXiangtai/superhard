@@ -171,6 +171,16 @@ public class SHConfig {
         return cfg().getBoolean("siege.final-wave-elite", true);
     }
 
+    /** 討伐制: ウェーブクリア後〜次ウェーブ開始までの待機 (ticks) */
+    public long getWaveTransitionDelayTicks() {
+        return cfg().getInt("siege.wave-transition-delay-sec", 10) * 20L;
+    }
+
+    /** 討伐制: 1ウェーブの最大制限時間 (秒) */
+    public int getWaveTimeoutSec() {
+        return cfg().getInt("siege.wave-timeout-sec", 180);
+    }
+
     // ---- レイドスケジュール ----
 
     public long getSiegeMinIntervalHours() {

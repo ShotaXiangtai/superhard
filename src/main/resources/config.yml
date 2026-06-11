@@ -152,6 +152,10 @@ siege:
   wave3-mobs-per-base: 7
   # 最終ウェーブで精鋭モブをスポーン（拠点ごとに1体）
   final-wave-elite: true
+  # 討伐制: ウェーブクリア後の次ウェーブまでの待機（秒）
+  wave-transition-delay-sec: 10
+  # 討伐制: 1ウェーブの最大制限時間（秒）。詰まったモブはここで強制撤退
+  wave-timeout-sec: 180
   # サーバー全体のモブ上限（大人数SMP向け、これ以上はスポーンしない）
   server-mob-cap: 40
   # この半径内の拠点を同一拠点として扱う（ブロック数）

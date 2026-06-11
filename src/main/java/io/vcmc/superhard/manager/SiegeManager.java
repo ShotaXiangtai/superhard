@@ -44,14 +44,16 @@ public class SiegeManager {
 
     private BukkitTask checkTask;
     private BukkitTask displayTask;
+    private BukkitTask waveTimeoutTask;
     private final List<BukkitTask> scheduledTasks = new ArrayList<>();
 
     private boolean siegeActive = false;
     private int     currentWave = 0;
     private long    nextRaidMs  = 0L;
     private boolean pendingRaid = false;
-    private final Set<Integer> firedWarnings = new HashSet<>();
-    private final Set<UUID>    siegeMobs     = new HashSet<>();
+    private final Set<Integer> firedWarnings  = new HashSet<>();
+    private final Set<UUID>    siegeMobs      = new HashSet<>();
+    private final Set<UUID>    currentWaveMobs = new HashSet<>(); // 討伐制管理用
 
     public SiegeManager(SuperHardPlugin plugin) {
         this.plugin   = plugin;
@@ -157,8 +159,12 @@ public class SiegeManager {
         // ActionBar 表示タスク開始
         startDisplayTask();
 
-        // ウェーブスケジュール（キャンセル可能にタスクを保持）
-        scheduleWaves(60L);
+        // 討伐制: Wave 1 のみ予約（以降は討伐完了で自動進行）
+        currentWaveMobs.clear();
+        scheduledTasks.forEach(t -> { if (!t.isCancelled()) t.cancel(); });
+        scheduledTasks.clear();
+        scheduledTasks.add(plugin.getServer().getScheduler().runTaskLater(plugin,
+            () -> { if (siegeActive) spawnWave(1); }, 60L));
 
         // Discord 通知
         if (plugin.getSHConfig().isDiscordRaidNotify()) {
@@ -187,6 +193,8 @@ public class SiegeManager {
         if (!siegeActive) return false;
         scheduledTasks.forEach(t -> { if (!t.isCancelled()) t.cancel(); });
         scheduledTasks.clear();
+        if (waveTimeoutTask != null && !waveTimeoutTask.isCancelled()) waveTimeoutTask.cancel();
+        currentWaveMobs.clear();
         if (displayTask != null) displayTask.cancel();
         for (World world : Bukkit.getWorlds()) {
             world.getEntities().stream()
@@ -207,19 +215,15 @@ public class SiegeManager {
         if (!siegeActive) return false;
         scheduledTasks.forEach(t -> { if (!t.isCancelled()) t.cancel(); });
         scheduledTasks.clear();
-        int nextWave = currentWave + 1;
-        int totalWaves = plugin.getSHConfig().getWaveCount();
-        if (nextWave > totalWaves) {
-            endRaid();
-        } else {
-            spawnWave(nextWave);
-            scheduleWaves(0L); // 残りウェーブを再スケジュール (spawnWaveは即実行済みなので次から)
-            // ただしすでに実行したウェーブの分は被らないよう先頭を除外
-            if (!scheduledTasks.isEmpty()) {
-                BukkitTask duplicate = scheduledTasks.remove(0);
-                if (!duplicate.isCancelled()) duplicate.cancel();
-            }
-        }
+        if (waveTimeoutTask != null && !waveTimeoutTask.isCancelled()) waveTimeoutTask.cancel();
+        // 現ウェーブのモブを除去してから次へ
+        currentWaveMobs.forEach(id ->
+            Bukkit.getWorlds().forEach(w -> {
+                var e = w.getEntity(id);
+                if (e != null && e.isValid()) e.remove();
+            }));
+        currentWaveMobs.clear();
+        proceedToNextWave();
         return true;
     }
 
@@ -230,6 +234,7 @@ public class SiegeManager {
     private void spawnWave(int wave) {
         if (!siegeActive) return;
         currentWave = wave;
+        currentWaveMobs.clear();
         boolean isFinalWave = wave == plugin.getSHConfig().getWaveCount();
 
         String waveMsg = plugin.getSHConfig().getWaveMessage(wave);
@@ -246,6 +251,23 @@ public class SiegeManager {
             if (spawned >= cap) break;
             spawned += spawnWaveAtBase(base, wave, isFinalWave, cap - spawned);
         }
+
+        // タイムアウト（mobs が詰まったとき強制次ウェーブ）
+        if (waveTimeoutTask != null && !waveTimeoutTask.isCancelled()) waveTimeoutTask.cancel();
+        long timeoutTicks = plugin.getSHConfig().getWaveTimeoutSec() * 20L;
+        waveTimeoutTask = plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (siegeActive && currentWave == wave) {
+                Bukkit.getOnlinePlayers().forEach(p ->
+                    p.sendMessage(Component.text("[SuperHard] タイムアウト — 残敵が撤退した", NamedTextColor.YELLOW)));
+                currentWaveMobs.forEach(id ->
+                    Bukkit.getWorlds().forEach(w -> {
+                        var e = w.getEntity(id);
+                        if (e != null && e.isValid()) e.remove();
+                    }));
+                currentWaveMobs.clear();
+                proceedToNextWave();
+            }
+        }, timeoutTicks);
     }
 
     private List<Location> collectUniqueBases() {
@@ -299,6 +321,7 @@ public class SiegeManager {
                 mob.setTarget(rep);
                 scaleSiegeMob(mob, threat);
                 siegeMobs.add(mob.getUniqueId());
+                currentWaveMobs.add(mob.getUniqueId()); // 討伐制追跡
                 spawned++;
             }
         }
@@ -310,6 +333,7 @@ public class SiegeManager {
             elite.setTarget(rep);
             plugin.getEliteManager().applyElite(elite, EliteManager.EliteType.HASHA);
             siegeMobs.add(elite.getUniqueId());
+            currentWaveMobs.add(elite.getUniqueId()); // 討伐制追跡
             spawned++;
             base.getWorld().getNearbyPlayers(base, 60).forEach(p ->
                 p.sendMessage(Component.text("[SuperHard] レイドの首領が現れた！", NamedTextColor.GOLD)));
@@ -485,7 +509,34 @@ public class SiegeManager {
     public boolean isSiegeActive()   { return siegeActive; }
     public int    getCurrentWave()   { return currentWave; }
 
-    public void onSiegeMobDeath(UUID mobId) { siegeMobs.remove(mobId); }
+    public void onSiegeMobDeath(UUID mobId) {
+        siegeMobs.remove(mobId);
+        currentWaveMobs.remove(mobId);
+
+        // 討伐制: 現ウェーブ全員倒したら次へ
+        if (siegeActive && currentWave > 0 && currentWaveMobs.isEmpty()) {
+            if (waveTimeoutTask != null && !waveTimeoutTask.isCancelled()) waveTimeoutTask.cancel();
+            Bukkit.getOnlinePlayers().forEach(p -> {
+                p.sendMessage(Component.text("[SuperHard] ウェーブクリア！", NamedTextColor.GREEN));
+                p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            });
+            // 10秒後に次ウェーブ（または終了）
+            long delay = plugin.getSHConfig().getWaveTransitionDelayTicks();
+            scheduledTasks.add(plugin.getServer().getScheduler().runTaskLater(plugin,
+                this::proceedToNextWave, delay));
+        }
+    }
+
+    private void proceedToNextWave() {
+        if (!siegeActive) return;
+        int nextWave   = currentWave + 1;
+        int totalWaves = plugin.getSHConfig().getWaveCount();
+        if (nextWave <= totalWaves) {
+            spawnWave(nextWave);
+        } else {
+            endRaid();
+        }
+    }
 
     // ============================================================
     //  セーブ / ロード

@@ -133,13 +133,7 @@ public class MobBehaviorManager {
             setCooldown(zombie, BehaviorKey.SCAFFOLD);
         }
 
-        // 仲間召喚: HOSTILE以上
-        if (threat.ordinal() >= ThreatLevel.HOSTILE.ordinal()
-                && plugin.getSHConfig().isBehaviorEnabled("zombie", "summon")
-                && isReady(zombie, BehaviorKey.SUMMON_ALLIES, getCooldownMs(zombie, "zombie", "summon"))) {
-            trySummonZombies(zombie, player);
-            setCooldown(zombie, BehaviorKey.SUMMON_ALLIES);
-        }
+        // 仲間召喚は削除 — レイド外で湧き数を増やさないため
     }
 
     private void tryBreakAheadBlock(Zombie zombie) {
@@ -169,25 +163,6 @@ public class MobBehaviorManager {
         }
     }
 
-    private void trySummonZombies(Zombie zombie, Player player) {
-        if (!SHUtil.chance(0.6)) return;
-        // スポーンキャップ: 近くにモブが多すぎたら召喚しない
-        if (plugin.getSHConfig().isEnhancedMobCapEnabled()) {
-            long nearby = zombie.getWorld()
-                .getNearbyEntities(zombie.getLocation(), 16, 8, 16, e -> e instanceof Monster)
-                .size();
-            if (nearby >= plugin.getSHConfig().getSummonNearbyCap()) return;
-        }
-        int count = SHUtil.randomInt(1, 2); // 1-3 → 1-2 に削減
-        for (int i = 0; i < count; i++) {
-            Location spawnLoc = SHUtil.safeSpawnNear(zombie.getLocation(), 3, 8);
-            Zombie summon = zombie.getWorld().spawn(spawnLoc, Zombie.class);
-            summon.setTarget(player);
-            // 召喚ゾンビは装備なし・弱め
-            AttributeInstance hp = summon.getAttribute(Attribute.MAX_HEALTH);
-            if (hp != null) hp.setBaseValue(hp.getBaseValue() * 0.8);
-        }
-    }
 
     // ============================================================
     //  スケルトン行動

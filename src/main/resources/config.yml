@@ -77,7 +77,8 @@ behavior:
     leap-cooldown-sec: 4
     scaffold-enabled: true
     scaffold-cooldown-sec: 12
-    summon-enabled: true
+    # 召喚はレイド外では無効（湧き数増加防止）
+    summon-enabled: false
     summon-cooldown-sec: 30
     block-break-enabled: true
 

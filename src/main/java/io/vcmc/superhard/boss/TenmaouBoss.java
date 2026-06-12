@@ -309,6 +309,9 @@ public class TenmaouBoss {
 
     private void rewardParticipants() {
         for (UUID id : participants) {
+            // ボス討伐統計カウント（オフラインでも記録）
+            plugin.getStatsManager().addBossKill(id);
+
             Player p = Bukkit.getPlayer(id);
             if (p == null || !p.isOnline()) continue;
 

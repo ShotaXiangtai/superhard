@@ -6,18 +6,23 @@ import io.vcmc.superhard.util.SHUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
 
 import java.util.List;
 
@@ -166,11 +171,76 @@ public class EliteManager {
 
     // ---- 鍛えの欠片 ----
 
-    /** 精鋭モブの死亡時に欠片をドロップするか判定する */
+    /** 精鋭モブの死亡時に欠片・特殊ドロップを判定する */
     public void handleEliteDrop(Mob mob) {
         if (!isElite(mob)) return;
-        if (!SHUtil.chance(plugin.getSHConfig().getShardDropChance())) return;
-        mob.getWorld().dropItemNaturally(mob.getLocation(), createTemperedShard());
+
+        // 通常の鋼ドロップ
+        if (SHUtil.chance(plugin.getSHConfig().getShardDropChance())) {
+            mob.getWorld().dropItemNaturally(mob.getLocation(), createTemperedShard());
+        }
+
+        // RAGE Lv.4/5 特殊ドロップ（覇者・天魔のみ対象）
+        EliteType type = getEliteType(mob);
+        if (type == null || type == EliteType.SHURA) return;
+
+        Player killer = mob.getKiller();
+        if (killer == null) return;
+
+        ThreatManager.ThreatLevel level = plugin.getThreatManager().getThreatLevel(killer);
+        if (level.ordinal() < ThreatManager.ThreatLevel.INFURIATED.ordinal()) return;
+
+        // Lv.5 で 8%、Lv.4 で 4%
+        double chance = (level == ThreatManager.ThreatLevel.WRATHFUL) ? 0.08 : 0.04;
+        if (!SHUtil.chance(chance)) return;
+
+        ItemStack special = Math.random() < 0.5 ? createRareEnchantBook(level) : createSpecialPotion(level);
+        mob.getWorld().dropItemNaturally(mob.getLocation(), special);
+        killer.sendMessage(net.kyori.adventure.text.Component.text("[SuperHard] ", net.kyori.adventure.text.format.NamedTextColor.DARK_RED)
+            .append(net.kyori.adventure.text.Component.text("精鋭から希少なアイテムを入手した！", net.kyori.adventure.text.format.NamedTextColor.YELLOW)));
+    }
+
+    private ItemStack createRareEnchantBook(ThreatManager.ThreatLevel level) {
+        // Lv.5 はより強力なエンチャントが出る
+        Enchantment[][] pool = level == ThreatManager.ThreatLevel.WRATHFUL
+            ? new Enchantment[][] {
+                {Enchantment.SHARPNESS, null},       // Sharpness V
+                {Enchantment.PROTECTION, null},      // Protection IV
+                {Enchantment.EFFICIENCY, null},      // Efficiency V
+                {Enchantment.FORTUNE, null},         // Fortune III
+                {Enchantment.LOOTING, null},         // Looting III
+                {Enchantment.MENDING, null},         // Mending I
+              }
+            : new Enchantment[][] {
+                {Enchantment.SHARPNESS, null},       // Sharpness IV
+                {Enchantment.PROTECTION, null},      // Protection IV
+                {Enchantment.UNBREAKING, null},      // Unbreaking III
+                {Enchantment.EFFICIENCY, null},      // Efficiency IV
+                {Enchantment.FEATHER_FALLING, null}, // Feather Falling IV
+              };
+
+        Enchantment[] chosen = pool[(int)(Math.random() * pool.length)];
+        Enchantment ench = chosen[0];
+
+        int maxLevel = ench.getMaxLevel();
+        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+        EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
+        meta.addStoredEnchant(ench, maxLevel, false);
+        book.setItemMeta(meta);
+        return book;
+    }
+
+    private ItemStack createSpecialPotion(ThreatManager.ThreatLevel level) {
+        PotionType[] pool = level == ThreatManager.ThreatLevel.WRATHFUL
+            ? new PotionType[]{ PotionType.STRENGTH, PotionType.REGENERATION, PotionType.FIRE_RESISTANCE }
+            : new PotionType[]{ PotionType.STRENGTH, PotionType.SWIFTNESS,    PotionType.FIRE_RESISTANCE };
+
+        PotionType chosen = pool[(int)(Math.random() * pool.length)];
+        ItemStack potion = new ItemStack(Material.SPLASH_POTION);
+        PotionMeta meta = (PotionMeta) potion.getItemMeta();
+        meta.setBasePotionType(chosen);
+        potion.setItemMeta(meta);
+        return potion;
     }
 
     public boolean isTemperedShard(ItemStack item) {

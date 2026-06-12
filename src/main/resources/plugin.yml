@@ -24,3 +24,6 @@ permissions:
   superhard.notify:
     description: Receive siege/threat notifications
     default: op
+  superhard.stats:
+    description: View own player stats with /sh stats
+    default: true

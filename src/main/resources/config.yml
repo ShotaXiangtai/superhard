@@ -219,6 +219,13 @@ bounty:
   # バウンティ討伐時のボーナス鋼
   extra-shards: 3
 
+# ---- フィールドボスシステム ----
+field-boss:
+  enabled: true
+  # スポーン間隔（分）
+  min-interval-min: 45
+  max-interval-min: 90
+
 # ---- 村人保護 ----
 villager-protection:
   enabled: true

@@ -2,6 +2,7 @@ package io.vcmc.superhard.listener;
 
 import io.vcmc.superhard.SuperHardPlugin;
 import io.vcmc.superhard.manager.ThreatManager;
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.event.EventHandler;
@@ -22,6 +23,7 @@ public class PlayerListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
         plugin.getThreatManager().initPlayer(player.getUniqueId());
+        plugin.getScoreboardManager().initPlayer(player);
 
         // pending チェック
         plugin.getRaidBossManager().onPlayerJoin(player);
@@ -53,6 +55,21 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
-        plugin.getThreatManager().removePlayer(event.getPlayer().getUniqueId());
+        var uuid = event.getPlayer().getUniqueId();
+        plugin.getThreatManager().removePlayer(uuid);
+        plugin.getScoreboardManager().removePlayer(uuid);
+    }
+
+    // ---- チャットプレフィックス [Lv.X] ----
+
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onChat(AsyncChatEvent event) {
+        var player = event.getPlayer();
+        ThreatManager.ThreatLevel level = plugin.getThreatManager().getThreatLevel(player);
+        Component prefix = Component.text("[" + level.displayName + "] ", level.color);
+        event.renderer((source, displayName, message, viewer) ->
+            prefix.append(displayName)
+                  .append(Component.text(": ", NamedTextColor.WHITE))
+                  .append(message));
     }
 }

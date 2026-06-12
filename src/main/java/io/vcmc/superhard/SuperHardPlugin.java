@@ -12,7 +12,10 @@ import io.vcmc.superhard.listener.PlayerListener;
 import io.vcmc.superhard.manager.BountyManager;
 import io.vcmc.superhard.manager.CursedLocationManager;
 import io.vcmc.superhard.manager.EliteManager;
+import io.vcmc.superhard.manager.FieldBossManager;
 import io.vcmc.superhard.manager.MobBehaviorManager;
+import io.vcmc.superhard.manager.PlayerStatsManager;
+import io.vcmc.superhard.manager.ScoreboardManager;
 import io.vcmc.superhard.manager.SiegeManager;
 import io.vcmc.superhard.manager.ThreatManager;
 import io.vcmc.superhard.util.DiscordWebhook;
@@ -32,6 +35,9 @@ public final class SuperHardPlugin extends JavaPlugin {
     private CursedLocationManager cursedLocationManager;
     private BountyManager bountyManager;
     private DiscordWebhook discordWebhook;
+    private PlayerStatsManager statsManager;
+    private ScoreboardManager scoreboardManager;
+    private FieldBossManager fieldBossManager;
 
     @Override
     public void onEnable() {
@@ -68,10 +74,16 @@ public final class SuperHardPlugin extends JavaPlugin {
             cmd.setTabCompleter(handler);
         }
 
+        statsManager        = new PlayerStatsManager(this);
+        scoreboardManager   = new ScoreboardManager(this);
+        fieldBossManager    = new FieldBossManager(this);
+
         threatManager.load();
         behaviorManager.start();
         siegeManager.start();
         raidBossManager.start();
+        scoreboardManager.start();
+        fieldBossManager.start();
 
         getLogger().info("SuperHard が有効化されました！ Hard SMPへようこそ。");
         getLogger().info("バージョン: " + getDescription().getVersion());
@@ -79,10 +91,13 @@ public final class SuperHardPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (raidBossManager != null) raidBossManager.shutdown();
-        if (behaviorManager != null) behaviorManager.stop();
-        if (threatManager   != null) { threatManager.save(); threatManager.stop(); }
-        if (siegeManager    != null) siegeManager.stop();
+        if (raidBossManager   != null) raidBossManager.shutdown();
+        if (behaviorManager   != null) behaviorManager.stop();
+        if (threatManager     != null) { threatManager.save(); threatManager.stop(); }
+        if (siegeManager      != null) siegeManager.stop();
+        if (scoreboardManager != null) scoreboardManager.stop();
+        if (fieldBossManager  != null) fieldBossManager.stop();
+        if (statsManager      != null) statsManager.save();
         getLogger().info("SuperHard が無効化されました。");
     }
 
@@ -97,4 +112,7 @@ public final class SuperHardPlugin extends JavaPlugin {
     public CursedLocationManager getCursedLocationManager() { return cursedLocationManager; }
     public BountyManager getBountyManager()                 { return bountyManager; }
     public DiscordWebhook getDiscordWebhook()               { return discordWebhook; }
+    public PlayerStatsManager getStatsManager()             { return statsManager; }
+    public ScoreboardManager getScoreboardManager()         { return scoreboardManager; }
+    public FieldBossManager getFieldBossManager()           { return fieldBossManager; }
 }

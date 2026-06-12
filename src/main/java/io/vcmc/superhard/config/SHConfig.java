@@ -271,6 +271,12 @@ public class SHConfig {
         return cfg().getDouble("villager-protection.radius", 25.0);
     }
 
+    // ---- フィールドボス ----
+
+    public boolean isFieldBossEnabled()       { return cfg().getBoolean("field-boss.enabled", true); }
+    public int     getFieldBossMinIntervalMin() { return cfg().getInt("field-boss.min-interval-min", 45); }
+    public int     getFieldBossMaxIntervalMin() { return cfg().getInt("field-boss.max-interval-min", 90); }
+
     // ---- メッセージ ----
 
     public String getMessage(String key) {

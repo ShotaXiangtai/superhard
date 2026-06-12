@@ -5,6 +5,7 @@ import io.vcmc.superhard.manager.EliteManager;
 import io.vcmc.superhard.manager.ThreatManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,6 +15,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -37,13 +39,26 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("superhard.admin")) {
-            sender.sendMessage(Component.text("[SuperHard] 権限がありません。", NamedTextColor.RED));
+        if (args.length == 0) {
+            if (!sender.hasPermission("superhard.admin")) {
+                sender.sendMessage(Component.text("[SuperHard] 権限がありません。", NamedTextColor.RED));
+                return true;
+            }
+            sendHelp(sender);
             return true;
         }
 
-        if (args.length == 0) {
-            sendHelp(sender);
+        // /sh stats は superhard.stats 権限（デフォルト全員）で実行可能
+        if (args[0].equalsIgnoreCase("stats")) {
+            if (!sender.hasPermission("superhard.stats")) {
+                sender.sendMessage(Component.text("[SuperHard] 権限がありません。", NamedTextColor.RED));
+                return true;
+            }
+            return cmdStats(sender, args);
+        }
+
+        if (!sender.hasPermission("superhard.admin")) {
+            sender.sendMessage(Component.text("[SuperHard] 権限がありません。", NamedTextColor.RED));
             return true;
         }
 
@@ -267,6 +282,39 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // ---- stats ----
+
+    private boolean cmdStats(CommandSender sender, String[] args) {
+        UUID targetId;
+        String targetName;
+
+        if (args.length >= 2) {
+            // 他プレイヤー参照は admin のみ
+            if (!sender.hasPermission("superhard.admin")) {
+                sender.sendMessage(Component.text("[SuperHard] 他のプレイヤーの統計を見るには管理者権限が必要です。", NamedTextColor.RED));
+                return true;
+            }
+            @SuppressWarnings("deprecation")
+            OfflinePlayer target = plugin.getServer().getOfflinePlayer(args[1]);
+            targetId   = target.getUniqueId();
+            targetName = target.getName() != null ? target.getName() : args[1];
+        } else if (sender instanceof Player player) {
+            targetId   = player.getUniqueId();
+            targetName = player.getName();
+        } else {
+            sender.sendMessage(Component.text("[SuperHard] コンソールからはプレイヤー名を指定してください。", NamedTextColor.RED));
+            return true;
+        }
+
+        var sm = plugin.getStatsManager();
+        sender.sendMessage(header(targetName + " の統計"));
+        sender.sendMessage(line("モブ撃破数",     String.valueOf(sm.getMobKills(targetId))));
+        sender.sendMessage(line("死亡回数",       String.valueOf(sm.getDeaths(targetId))));
+        sender.sendMessage(line("レイド参加回数", String.valueOf(sm.getRaids(targetId))));
+        sender.sendMessage(line("ボス討伐回数",   String.valueOf(sm.getBossKills(targetId))));
+        return true;
+    }
+
     // ---- top ----
 
     private boolean cmdTop(CommandSender sender) {
@@ -303,6 +351,7 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(cmd("/sh top",                        "RAGE ランキング TOP10"));
         sender.sendMessage(cmd("/sh raid <start|cancel|skip|status>", "レイド管理"));
         sender.sendMessage(cmd("/sh boss <spawn|cancel>",      "レイドボス管理"));
+        sender.sendMessage(cmd("/sh stats [player]",           "プレイヤー統計を確認"));
     }
 
     // ---- フォーマットヘルパー ----
@@ -329,8 +378,10 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("superhard.admin")) return List.of();
 
         if (args.length == 1) {
-            return Arrays.asList("status", "threat", "setlevel", "reload", "elite", "raid", "boss", "top")
-                .stream().filter(s -> s.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
+            List<String> subs = new java.util.ArrayList<>(
+                Arrays.asList("status", "threat", "setlevel", "reload", "elite", "raid", "boss", "top"));
+            if (sender.hasPermission("superhard.stats")) subs.add("stats");
+            return subs.stream().filter(s -> s.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("boss")) {
@@ -350,7 +401,9 @@ public class SuperHardCommand implements CommandExecutor, TabCompleter {
                 .collect(Collectors.toList());
         }
 
-        if (args.length == 2 && (args[0].equalsIgnoreCase("threat") || args[0].equalsIgnoreCase("setlevel"))) {
+        if (args.length == 2 && (args[0].equalsIgnoreCase("threat")
+                || args[0].equalsIgnoreCase("setlevel")
+                || args[0].equalsIgnoreCase("stats"))) {
             return plugin.getServer().getOnlinePlayers().stream()
                 .map(Player::getName)
                 .filter(n -> n.startsWith(args[1]))

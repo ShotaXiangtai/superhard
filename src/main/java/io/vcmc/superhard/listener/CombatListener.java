@@ -81,6 +81,14 @@ public class CombatListener implements Listener {
         }
 
         plugin.getThreatManager().addThreat(player, points);
+
+        // モブ撃破統計
+        plugin.getStatsManager().addMobKill(player.getUniqueId());
+
+        // レイド参加記録
+        if (plugin.getSiegeManager().isSiegeActive()) {
+            plugin.getSiegeManager().recordParticipant(player.getUniqueId());
+        }
     }
 
     // ---- エンティティダメージ: 特殊行動のトリガー ----
@@ -143,6 +151,7 @@ public class CombatListener implements Listener {
         if (player.hasPermission("superhard.bypass")) return;
 
         plugin.getThreatManager().applyDeathPenalty(player);
+        plugin.getStatsManager().addDeath(player.getUniqueId());
 
         // 呪われた場所として登録
         if (plugin.getSHConfig().isCursedLocationsEnabled()) {

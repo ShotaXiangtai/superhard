@@ -51,9 +51,10 @@ public class SiegeManager {
     private int     currentWave = 0;
     private long    nextRaidMs  = 0L;
     private boolean pendingRaid = false;
-    private final Set<Integer> firedWarnings  = new HashSet<>();
-    private final Set<UUID>    siegeMobs      = new HashSet<>();
+    private final Set<Integer> firedWarnings   = new HashSet<>();
+    private final Set<UUID>    siegeMobs       = new HashSet<>();
     private final Set<UUID>    currentWaveMobs = new HashSet<>(); // 討伐制管理用
+    private final Set<UUID>    raidParticipants = new HashSet<>(); // 統計用
 
     public SiegeManager(SuperHardPlugin plugin) {
         this.plugin   = plugin;
@@ -132,6 +133,7 @@ public class SiegeManager {
         siegeActive = true;
         currentWave = 0;
         siegeMobs.clear();
+        raidParticipants.clear();
 
         // スケジュール更新
         scheduleNextRaid(
@@ -371,8 +373,15 @@ public class SiegeManager {
             p.sendMessage(Component.text(
                 plugin.getSHConfig().getMessage("siege-end-message"), NamedTextColor.GOLD)));
 
-        // 全ウェーブ完了時の生存報酬
-        if (completedAllWaves) giveRaidRewards();
+        // 全ウェーブ完了時の生存報酬・統計反映
+        if (completedAllWaves) {
+            giveRaidRewards();
+            // レイド参加統計を確定
+            for (UUID id : raidParticipants) {
+                plugin.getStatsManager().addRaid(id);
+            }
+        }
+        raidParticipants.clear();
     }
 
     private void giveRaidRewards() {
@@ -508,6 +517,8 @@ public class SiegeManager {
 
     public boolean isSiegeActive()   { return siegeActive; }
     public int    getCurrentWave()   { return currentWave; }
+
+    public void recordParticipant(UUID playerId) { raidParticipants.add(playerId); }
 
     public void onSiegeMobDeath(UUID mobId) {
         siegeMobs.remove(mobId);

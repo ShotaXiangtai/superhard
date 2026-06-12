@@ -150,27 +150,30 @@ public class MobBehaviorManager {
         double heightDiff = player.getLocation().getY() - zombie.getLocation().getY();
         if (heightDiff < 1.5) return;
 
-        // 真下に足場がない場合はスキップ
-        Block ground = zombie.getLocation().clone().subtract(0, 0.1, 0).getBlock();
-        if (!ground.getType().isSolid()) return;
+        // 足元が地面でなければスキップ
+        if (!zombie.getLocation().clone().subtract(0, 0.1, 0).getBlock().getType().isSolid()) return;
 
-        Vector dir = SHUtil.horizontalDirection(zombie.getLocation(), player.getLocation());
-        Location fwdLoc   = zombie.getLocation().clone().add(dir.getX(), 0, dir.getZ());
-        Block    fwdBlock = fwdLoc.getBlock();
+        Vector dir     = SHUtil.horizontalDirection(zombie.getLocation(), player.getLocation());
+        Location fwdLoc = zombie.getLocation().clone().add(dir.getX(), 0, dir.getZ());
+        Block fwdBlock  = fwdLoc.getBlock();
 
-        if (fwdBlock.getType().isSolid()) {
-            // ケース①: 前方が壁 → 壁の1段上にブロックを置いて段差を作る
-            Block fwdAbove = fwdBlock.getRelative(0, 1, 0);
-            Block fwdAbove2 = fwdBlock.getRelative(0, 2, 0);
-            if ((fwdAbove.getType().isAir() || fwdAbove.isLiquid())
-                    && (fwdAbove2.getType().isAir() || fwdAbove2.isLiquid())) {
-                fwdAbove.setType(Material.COBBLESTONE);
+        if (!fwdBlock.getType().isSolid()) {
+            // 前方が空き: 前方ブロック位置に石材を1段置いてステップアップさせる
+            // (設置した cobblestone の上面 = ゾンビの足元 +1 → ゾンビが1段上れる)
+            Block above1 = fwdBlock.getRelative(0, 1, 0);
+            Block above2 = fwdBlock.getRelative(0, 2, 0);
+            if (fwdBlock.getType().isAir()
+                    && !above1.getType().isSolid()
+                    && !above2.getType().isSolid()) {
+                fwdBlock.setType(Material.COBBLESTONE);
             }
         } else {
-            // ケース②: 前方が空き → 足元の地面が途切れていれば橋を補填
-            Block fwdGround = fwdLoc.clone().subtract(0, 1, 0).getBlock();
-            if (!fwdGround.getType().isSolid() && !fwdGround.isLiquid()) {
-                fwdGround.setType(Material.COBBLESTONE);
+            // 前方が壁: ゾンビの足元位置に石材を積んで自身を1段押し上げる
+            // これを繰り返すことで壁を超える高さまで達する
+            Block feetBlock = zombie.getLocation().getBlock();
+            Block headTop   = feetBlock.getRelative(0, 2, 0);
+            if (feetBlock.getType().isAir() && !headTop.getType().isSolid()) {
+                feetBlock.setType(Material.COBBLESTONE);
             }
         }
     }

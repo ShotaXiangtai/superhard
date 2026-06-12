@@ -6,6 +6,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -208,16 +209,24 @@ public class FieldBossManager {
     private Location findSpawnNear(Location center, double minR, double maxR) {
         World world = center.getWorld();
         if (world == null) return null;
-        for (int i = 0; i < 8; i++) {
+        Location fallback = null;
+        for (int i = 0; i < 12; i++) {
             double angle = Math.random() * 2 * Math.PI;
             double dist  = minR + Math.random() * (maxR - minR);
             int x = (int)(center.getX() + Math.cos(angle) * dist);
             int z = (int)(center.getZ() + Math.sin(angle) * dist);
             int y = world.getHighestBlockYAt(x, z) + 1;
             Location loc = new Location(world, x + 0.5, y, z + 0.5);
-            if (world.getBlockAt(loc).isPassable()) return loc;
+            Block block = world.getBlockAt(loc);
+            if (!block.isPassable()) continue;
+            // 湧き潰し済みエリアを避ける
+            if (block.getLightFromBlocks() > 0) {
+                if (fallback == null) fallback = loc;
+                continue;
+            }
+            return loc;
         }
-        return null;
+        return fallback;
     }
 
     public String getCountdownString() {

@@ -71,7 +71,8 @@ public final class SHUtil {
      */
     public static Location safeSpawnNear(Location base, double minRadius, double maxRadius) {
         World world = base.getWorld();
-        for (int attempt = 0; attempt < 8; attempt++) {
+        Location fallback = null;
+        for (int attempt = 0; attempt < 12; attempt++) {
             double angle = RANDOM.nextDouble() * Math.PI * 2;
             double dist  = randomDouble(minRadius, maxRadius);
             double x = base.getX() + Math.cos(angle) * dist;
@@ -79,11 +80,17 @@ public final class SHUtil {
             int y = world.getHighestBlockYAt((int) x, (int) z) + 1;
             Location loc = new Location(world, x, y, z);
             Block block = loc.getBlock();
-            if (block.getType().isAir() && loc.clone().subtract(0, 1, 0).getBlock().getType().isSolid()) {
-                return loc;
+            if (!block.getType().isAir()) continue;
+            if (!loc.clone().subtract(0, 1, 0).getBlock().getType().isSolid()) continue;
+            // 湧き潰しを尊重: プレイヤーが設置した光源（ブロック光源）がある場所は避ける
+            if (block.getLightFromBlocks() > 0) {
+                if (fallback == null) fallback = loc; // 暗い場所が見つからない場合の予備
+                continue;
             }
+            return loc;
         }
-        // フォールバック: 必ず地表に返す
+        // 全試行で湧き潰し済みだった場合でも予備地点か地表に返す（スポーンは一応保証）
+        if (fallback != null) return fallback;
         double fx = base.getX() + RANDOM.nextGaussian() * 5;
         double fz = base.getZ() + RANDOM.nextGaussian() * 5;
         int fy = world.getHighestBlockYAt((int) fx, (int) fz) + 1;

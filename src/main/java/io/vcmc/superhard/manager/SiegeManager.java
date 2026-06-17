@@ -254,6 +254,18 @@ public class SiegeManager {
             spawned += spawnWaveAtBase(base, wave, isFinalWave, cap - spawned);
         }
 
+        // スポーン0体の場合: タイムアウトを待たず短時間後に次ウェーブへスキップ
+        if (spawned == 0) {
+            Bukkit.getOnlinePlayers().forEach(p ->
+                p.sendMessage(Component.text(
+                    "[SuperHard] Wave " + wave + ": スポーン地点が見つからなかった — スキップ",
+                    NamedTextColor.YELLOW)));
+            final int thisWave = wave;
+            scheduledTasks.add(plugin.getServer().getScheduler().runTaskLater(plugin,
+                () -> { if (siegeActive && currentWave == thisWave) proceedToNextWave(); }, 40L));
+            return;
+        }
+
         // タイムアウト（mobs が詰まったとき強制次ウェーブ）
         if (waveTimeoutTask != null && !waveTimeoutTask.isCancelled()) waveTimeoutTask.cancel();
         long timeoutTicks = plugin.getSHConfig().getWaveTimeoutSec() * 20L;
@@ -522,10 +534,12 @@ public class SiegeManager {
 
     public void onSiegeMobDeath(UUID mobId) {
         siegeMobs.remove(mobId);
-        currentWaveMobs.remove(mobId);
+        boolean wasWaveMob = currentWaveMobs.remove(mobId);
 
-        // 討伐制: 現ウェーブ全員倒したら次へ
-        if (siegeActive && currentWave > 0 && currentWaveMobs.isEmpty()) {
+        // 討伐制: 今死んだのが実際のウェーブモブで、かつ全員倒したら次へ
+        // wasWaveMob チェックなしだと、ウェーブ開始直後に無関係なエンティティが
+        // 死ぬだけで currentWaveMobs.isEmpty() == true になり即終了するバグを防ぐ
+        if (wasWaveMob && siegeActive && currentWave > 0 && currentWaveMobs.isEmpty()) {
             if (waveTimeoutTask != null && !waveTimeoutTask.isCancelled()) waveTimeoutTask.cancel();
             Bukkit.getOnlinePlayers().forEach(p -> {
                 p.sendMessage(Component.text("[SuperHard] ウェーブクリア！", NamedTextColor.GREEN));

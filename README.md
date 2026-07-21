@@ -80,7 +80,7 @@ Hard SMP チャレンジプラグイン for **Paper 26.1.2**
 
 ## ライセンス
 
-[Unlicense](LICENSE) — パブリックドメイン。自由に使用・改変・再配布可。
+[GNU General Public License v3.0](LICENSE)
 
 ## ビルド
 
